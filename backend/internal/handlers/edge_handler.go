@@ -2,45 +2,45 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
-	"org-graph/internal/models"
-)
+	"github.com/google/uuid"
 
-var edges []models.Edge
+	"org-graph/internal/models"
+	"org-graph/internal/store"
+)
 
 func CreateEdge(w http.ResponseWriter, r *http.Request) {
 	var e models.Edge
 	if err := json.NewDecoder(r.Body).Decode(&e); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if e.FromID == "" || e.ToID == "" {
-		http.Error(w, "from_id and to_id are required", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "from_id and to_id are required")
 		return
 	}
 
-	if !nodeExists(e.FromID) || !nodeExists(e.ToID) {
-		http.Error(w, "from_id and to_id must reference existing nodes", http.StatusBadRequest)
+	if !store.NodeExists(e.FromID) || !store.NodeExists(e.ToID) {
+		writeError(w, http.StatusBadRequest, "from_id and to_id must reference existing nodes")
 		return
 	}
 
-	edges = append(edges, e)
+	e.ID = uuid.NewString()
+	if err := store.AddEdge(e); err != nil {
+		if errors.Is(err, store.ErrDuplicateEdge) {
+			writeError(w, http.StatusBadRequest, "duplicate edge for the same from_id and to_id")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(e)
+	writeJSON(w, http.StatusOK, e)
 }
 
 func GetEdges(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(edges)
-}
-
-func nodeExists(id string) bool {
-	for _, n := range nodes {
-		if n.ID == id {
-			return true
-		}
-	}
-	return false
+	writeJSON(w, http.StatusOK, store.SnapshotEdges())
 }

@@ -38,6 +38,15 @@ func main() {
 		}
 	})
 
+	// Graph snapshot
+	mux.HandleFunc("/graph", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		handlers.GetGraph(w, r)
+	})
+
 	log.Println("Server running on :8080")
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }
