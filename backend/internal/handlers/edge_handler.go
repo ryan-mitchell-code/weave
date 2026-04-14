@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -23,6 +24,12 @@ func CreateEdge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	e.Type = strings.TrimSpace(e.Type)
+	if e.Type == "" {
+		writeError(w, http.StatusBadRequest, "type is required")
+		return
+	}
+
 	if !store.NodeExists(e.FromID) || !store.NodeExists(e.ToID) {
 		writeError(w, http.StatusBadRequest, "from_id and to_id must reference existing nodes")
 		return
@@ -31,7 +38,7 @@ func CreateEdge(w http.ResponseWriter, r *http.Request) {
 	e.ID = uuid.NewString()
 	if err := store.AddEdge(e); err != nil {
 		if errors.Is(err, store.ErrDuplicateEdge) {
-			writeError(w, http.StatusBadRequest, "duplicate edge for the same from_id and to_id")
+			writeError(w, http.StatusBadRequest, "duplicate edge for the same from_id, to_id, and type")
 			return
 		}
 		writeError(w, http.StatusInternalServerError, err.Error())

@@ -29,6 +29,7 @@ export function GraphView({ nodes, edges }: GraphViewProps) {
         id: edge.id,
         source: edge.from_id,
         target: edge.to_id,
+        label: edge.type,
       })),
     [edges],
   )

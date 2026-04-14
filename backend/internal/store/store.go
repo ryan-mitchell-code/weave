@@ -30,7 +30,7 @@ func AddEdge(e models.Edge) error {
 	mu.Lock()
 	defer mu.Unlock()
 	for _, x := range Edges {
-		if x.FromID == e.FromID && x.ToID == e.ToID {
+		if x.FromID == e.FromID && x.ToID == e.ToID && x.Type == e.Type {
 			return ErrDuplicateEdge
 		}
 	}

@@ -22,6 +22,7 @@ export default function Home() {
   const [saving, setSaving] = useState(false)
   const [edgeFromId, setEdgeFromId] = useState('')
   const [edgeToId, setEdgeToId] = useState('')
+  const [edgeType, setEdgeType] = useState('works_with')
   const [edgeSaving, setEdgeSaving] = useState(false)
 
   const load = useCallback(async () => {
@@ -89,10 +90,12 @@ export default function Home() {
       const newEdge = await createEdge({
         from_id: edgeFromId,
         to_id: edgeToId,
+        type: edgeType,
       })
       setEdges((prev) => [...prev, newEdge])
       setEdgeFromId('')
       setEdgeToId('')
+      setEdgeType('works_with')
     } catch (err) {
       setError(
         err instanceof Error
@@ -231,6 +234,21 @@ export default function Home() {
               ))}
             </select>
           </div>
+          <div style={{ marginBottom: 8 }}>
+            <label htmlFor="edge-type" style={{ display: 'block' }}>
+              Relationship type
+            </label>
+            <select
+              id="edge-type"
+              value={edgeType}
+              onChange={(e) => setEdgeType(e.target.value)}
+              disabled={loading || nodes.length === 0}
+            >
+              <option value="works_with">works_with</option>
+              <option value="reports_to">reports_to</option>
+              <option value="depends_on">depends_on</option>
+            </select>
+          </div>
           <button type="submit" disabled={edgeSubmitDisabled}>
             {edgeSaving ? 'Saving…' : 'Create edge'}
           </button>
@@ -256,7 +274,7 @@ export default function Home() {
           <ul style={{ paddingLeft: '1.25rem' }}>
             {edges.map((ed) => (
               <li key={ed.id}>
-                {nodeLabel(ed.from_id)} → {nodeLabel(ed.to_id)}
+                {nodeLabel(ed.from_id)} → {nodeLabel(ed.to_id)} ({ed.type})
                 <span style={{ color: '#888', fontSize: '0.85em' }}>
                   {' '}
                   ({ed.id})

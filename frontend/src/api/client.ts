@@ -13,7 +13,7 @@ export interface Edge {
   id: string
   from_id: string
   to_id: string
-  type?: string
+  type: string
 }
 
 export interface Graph {
@@ -60,13 +60,18 @@ export async function createNode(input: CreateNodeInput): Promise<Node> {
 export interface CreateEdgeInput {
   from_id: string
   to_id: string
+  type: string
 }
 
 export async function createEdge(input: CreateEdgeInput): Promise<Edge> {
   const res = await fetch(`${baseUrl}/edges`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from_id: input.from_id, to_id: input.to_id }),
+    body: JSON.stringify({
+      from_id: input.from_id,
+      to_id: input.to_id,
+      type: input.type,
+    }),
   })
   return parseJson<Edge>(res)
 }
