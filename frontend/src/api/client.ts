@@ -56,3 +56,17 @@ export async function createNode(input: CreateNodeInput): Promise<Node> {
   })
   return parseJson<Node>(res)
 }
+
+export interface CreateEdgeInput {
+  from_id: string
+  to_id: string
+}
+
+export async function createEdge(input: CreateEdgeInput): Promise<Edge> {
+  const res = await fetch(`${baseUrl}/edges`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from_id: input.from_id, to_id: input.to_id }),
+  })
+  return parseJson<Edge>(res)
+}
