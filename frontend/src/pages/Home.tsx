@@ -7,6 +7,7 @@ import {
   type Node,
   type NodeType,
 } from '../api/client'
+import { GraphView } from '../graph/GraphView'
 
 const selfLinkMessage =
   'An edge cannot connect a node to itself. Choose a different “to” node.'
@@ -263,6 +264,18 @@ export default function Home() {
               </li>
             ))}
           </ul>
+        )}
+      </section>
+
+      <section aria-labelledby="graph-heading" style={{ marginTop: 24 }}>
+        <h2 id="graph-heading" style={{ fontSize: '1rem' }}>
+          Graph
+        </h2>
+        {!loading && nodes.length === 0 && (
+          <p style={{ color: '#555' }}>Add nodes to see the graph.</p>
+        )}
+        {!loading && nodes.length > 0 && (
+          <GraphView nodes={nodes} edges={edges} />
         )}
       </section>
     </main>
