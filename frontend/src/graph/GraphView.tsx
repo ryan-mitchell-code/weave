@@ -7,9 +7,18 @@ import 'reactflow/dist/style.css'
 export interface GraphViewProps {
   nodes: Node[]
   edges: Edge[]
+  selectedNodeId?: string | null
+  onNodeClick?: (nodeId: string) => void
+  onPaneClick?: () => void
 }
 
-export function GraphView({ nodes, edges }: GraphViewProps) {
+export function GraphView({
+  nodes,
+  edges,
+  selectedNodeId = null,
+  onNodeClick,
+  onPaneClick,
+}: GraphViewProps) {
   const flowNodes = useMemo(
     () =>
       nodes.map((node, index) => ({
@@ -19,8 +28,9 @@ export function GraphView({ nodes, edges }: GraphViewProps) {
           x: (index % 5) * 150,
           y: Math.floor(index / 5) * 100,
         },
+        selected: node.id === selectedNodeId,
       })),
-    [nodes],
+    [nodes, selectedNodeId],
   )
 
   const flowEdges = useMemo(
@@ -52,10 +62,13 @@ export function GraphView({ nodes, edges }: GraphViewProps) {
         edges={rfEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onNodeClick={(_, node) => onNodeClick?.(node.id)}
+        onPaneClick={() => onPaneClick?.()}
         fitView
         nodesDraggable={false}
         nodesConnectable={false}
-        elementsSelectable={false}
+        elementsSelectable
+        panOnDrag={true}
       />
     </div>
   )

@@ -24,6 +24,7 @@ export default function Home() {
   const [edgeToId, setEdgeToId] = useState('')
   const [edgeType, setEdgeType] = useState('works_with')
   const [edgeSaving, setEdgeSaving] = useState(false)
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -42,6 +43,23 @@ export default function Home() {
   useEffect(() => {
     void load()
   }, [load])
+
+  useEffect(() => {
+    if (selectedNodeId && !nodes.some((n) => n.id === selectedNodeId)) {
+      setSelectedNodeId(null)
+    }
+  }, [nodes, selectedNodeId])
+
+  const selectedNode = selectedNodeId
+    ? nodes.find((n) => n.id === selectedNodeId)
+    : undefined
+
+  const connectedEdges =
+    selectedNodeId == null
+      ? []
+      : edges.filter(
+          (e) => e.from_id === selectedNodeId || e.to_id === selectedNodeId,
+        )
 
   const nameTrimmed = name.trim()
   const edgeSubmitDisabled =
@@ -293,7 +311,67 @@ export default function Home() {
           <p style={{ color: '#555' }}>Add nodes to see the graph.</p>
         )}
         {!loading && nodes.length > 0 && (
-          <GraphView nodes={nodes} edges={edges} />
+          <>
+            <GraphView
+              nodes={nodes}
+              edges={edges}
+              selectedNodeId={selectedNodeId}
+              onNodeClick={(nodeId) => setSelectedNodeId(nodeId)}
+              onPaneClick={() => setSelectedNodeId(null)}
+            />
+            <section
+              aria-labelledby="inspect-heading"
+              style={{ marginTop: 16 }}
+            >
+              <h2 id="inspect-heading" style={{ fontSize: '1rem' }}>
+                Node details
+              </h2>
+              {!selectedNodeId && (
+                <p style={{ color: '#555' }}>Select a node to view details</p>
+              )}
+              {selectedNode && (
+                <>
+                  <p style={{ marginBottom: 4 }}>
+                    <strong>Name:</strong> {selectedNode.name}
+                  </p>
+                  <p style={{ marginBottom: 4 }}>
+                    <strong>Type:</strong> {selectedNode.type}
+                  </p>
+                  <p style={{ marginBottom: 12 }}>
+                    <strong>ID:</strong>{' '}
+                    <span style={{ fontSize: '0.85em', color: '#555' }}>
+                      {selectedNode.id}
+                    </span>
+                  </p>
+                  <h3 style={{ fontSize: '0.95rem', marginBottom: 8 }}>
+                    Connections
+                  </h3>
+                  {connectedEdges.length === 0 && <p>No connections.</p>}
+                  {connectedEdges.length > 0 && (
+                    <ul style={{ paddingLeft: '1.25rem', marginTop: 0 }}>
+                      {connectedEdges.map((ed) => {
+                        const isSource = ed.from_id === selectedNode.id
+                        const otherId = isSource ? ed.to_id : ed.from_id
+                        return (
+                          <li key={ed.id} style={{ marginBottom: 8 }}>
+                            <div>
+                              {nodeLabel(ed.from_id)} → {nodeLabel(ed.to_id)} (
+                              {ed.type})
+                            </div>
+                            <div style={{ color: '#555', fontSize: '0.9rem' }}>
+                              {isSource
+                                ? `→ ${nodeLabel(otherId)}`
+                                : `${nodeLabel(otherId)} ←`}
+                            </div>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  )}
+                </>
+              )}
+            </section>
+          </>
         )}
       </section>
     </main>
