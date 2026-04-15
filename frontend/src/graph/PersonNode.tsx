@@ -8,6 +8,8 @@ export type PersonNodeData = {
   name: string
   team: string
   highlighted?: boolean
+  /** Focus subgraph (GraphView); inactive nodes are faded at the node wrapper level. */
+  isActive?: boolean
 }
 
 function PersonNode({ data, selected }: NodeProps<PersonNodeData>) {
@@ -31,7 +33,7 @@ function PersonNode({ data, selected }: NodeProps<PersonNodeData>) {
   const colors = colorForTeam(team)
 
   const borderClass = selected
-    ? 'border-slate-600 ring-2 ring-blue-500'
+    ? 'border-slate-500 ring-[3px] ring-blue-400 shadow-lg shadow-blue-500/25'
     : highlighted
       ? 'border-slate-600 ring-2 ring-amber-400/70'
       : 'border-slate-700 hover:border-slate-600'

@@ -25,6 +25,47 @@ const nodeTypes = { person: PersonNode }
 const NODE_WIDTH = GRAPH_THEME.node.width
 const NODE_HEIGHT = GRAPH_THEME.node.height
 
+const FOCUS_INACTIVE_NODE_OPACITY = 0.25
+const FOCUS_INACTIVE_EDGE_OPACITY = 0.15
+const FOCUS_ACTIVE_EDGE_STROKE = 2.75
+const OPACITY_TRANSITION = 'opacity 0.2s ease'
+
+function computeFocusSets(
+  graphNodes: Node[],
+  graphEdges: Edge[],
+  selectedNodeId: string | null,
+): { activeNodeIds: Set<string>; activeEdgeIds: Set<string> } {
+  if (!selectedNodeId) {
+    return {
+      activeNodeIds: new Set(graphNodes.map((n) => n.id)),
+      activeEdgeIds: new Set(graphEdges.map((e) => e.id)),
+    }
+  }
+  const activeNodeIds = new Set<string>()
+  const queue: string[] = [selectedNodeId]
+  activeNodeIds.add(selectedNodeId)
+  while (queue.length > 0) {
+    const id = queue.shift()!
+    for (const e of graphEdges) {
+      if (e.from_id === id && !activeNodeIds.has(e.to_id)) {
+        activeNodeIds.add(e.to_id)
+        queue.push(e.to_id)
+      }
+      if (e.to_id === id && !activeNodeIds.has(e.from_id)) {
+        activeNodeIds.add(e.from_id)
+        queue.push(e.from_id)
+      }
+    }
+  }
+  const activeEdgeIds = new Set<string>()
+  for (const e of graphEdges) {
+    if (activeNodeIds.has(e.from_id) && activeNodeIds.has(e.to_id)) {
+      activeEdgeIds.add(e.id)
+    }
+  }
+  return { activeNodeIds, activeEdgeIds }
+}
+
 function formatKindLabel(kind: string): string {
   const spaced = kind.replace(/_/g, ' ')
   return spaced.charAt(0).toUpperCase() + spaced.slice(1)
@@ -86,7 +127,11 @@ function edgeStrokeForType(relType: string): string {
   }
 }
 
-function buildFlowEdges(edges: Edge[], selectedNodeId: string | null) {
+function buildFlowEdges(
+  edges: Edge[],
+  hasNodeFocus: boolean,
+  activeEdgeIds: Set<string>,
+) {
   const pairKey = (from: string, to: string) => `${from}-${to}`
   const counts = new Map<string, number>()
   for (const e of edges) {
@@ -101,18 +146,15 @@ function buildFlowEdges(edges: Edge[], selectedNodeId: string | null) {
     nextIdx.set(k, i + 1)
     const offset = n === 1 ? 0 : (i - (n - 1) / 2) * 80
     const stroke = edgeStrokeForType(edge.type)
-    const connected =
-      !selectedNodeId ||
-      edge.from_id === selectedNodeId ||
-      edge.to_id === selectedNodeId
-    const edgeOpacity = selectedNodeId
-      ? (connected ? 1 : GRAPH_THEME.edge.dimmedOpacity)
+    const isEdgeActive = !hasNodeFocus || activeEdgeIds.has(edge.id)
+    const edgeOpacity = hasNodeFocus
+      ? (isEdgeActive ? 1 : FOCUS_INACTIVE_EDGE_OPACITY)
       : GRAPH_THEME.edge.defaultOpacity
-    const strokeWidth = selectedNodeId && connected
-      ? GRAPH_THEME.edge.connectedStrokeWidth
+    const strokeWidth = hasNodeFocus
+      ? (isEdgeActive ? FOCUS_ACTIVE_EDGE_STROKE : GRAPH_THEME.edge.defaultStrokeWidth)
       : GRAPH_THEME.edge.defaultStrokeWidth
-    const labelOpacity = selectedNodeId
-      ? (connected ? 1 : GRAPH_THEME.edge.labelDimmedOpacity)
+    const labelOpacity = hasNodeFocus
+      ? (isEdgeActive ? 1 : GRAPH_THEME.edge.labelDimmedOpacity * 0.75)
       : GRAPH_THEME.edge.labelDefaultOpacity
 
     return {
@@ -122,7 +164,12 @@ function buildFlowEdges(edges: Edge[], selectedNodeId: string | null) {
       type: 'custom',
       data: { offset },
       label: formatKindLabel(edge.type),
-      style: { stroke, strokeWidth, opacity: edgeOpacity },
+      style: {
+        stroke,
+        strokeWidth,
+        opacity: edgeOpacity,
+        transition: `${OPACITY_TRANSITION}, stroke-width 0.2s ease`,
+      },
       zIndex: edgeIndex,
       markerEnd: {
         type: MarkerType.ArrowClosed,
@@ -139,8 +186,8 @@ function buildFlowEdges(edges: Edge[], selectedNodeId: string | null) {
       labelShowBg: true,
       labelBgStyle: {
         fill: GRAPH_THEME.edge.labelBg,
-        fillOpacity: selectedNodeId
-          ? (connected ? GRAPH_THEME.edge.labelBgConnectedOpacity : GRAPH_THEME.edge.labelBgDimmedOpacity)
+        fillOpacity: hasNodeFocus
+          ? (isEdgeActive ? GRAPH_THEME.edge.labelBgConnectedOpacity : GRAPH_THEME.edge.labelBgDimmedOpacity)
           : GRAPH_THEME.edge.labelBgDefaultOpacity,
       },
       labelBgPadding: GRAPH_THEME.edge.labelBgPadding,
@@ -150,10 +197,11 @@ function buildFlowEdges(edges: Edge[], selectedNodeId: string | null) {
 
 function buildFlowEdgesWithHighlight(
   edges: Edge[],
-  selectedNodeId: string | null,
+  hasNodeFocus: boolean,
+  activeEdgeIds: Set<string>,
   highlightedEdgeId: string | null,
 ) {
-  return buildFlowEdges(edges, selectedNodeId).map((edge) => {
+  return buildFlowEdges(edges, hasNodeFocus, activeEdgeIds).map((edge) => {
     if (!highlightedEdgeId || edge.id !== highlightedEdgeId) return edge
     const style =
       (edge.style as { strokeWidth?: number; opacity?: number; stroke?: string } | undefined) ??
@@ -222,29 +270,50 @@ export function GraphView({
     }
   }, [nodes, edges, focusMode, selectedNodeId])
 
+  const { activeNodeIds, activeEdgeIds } = useMemo(
+    () => computeFocusSets(visibleGraph.nodes, visibleGraph.edges, selectedNodeId),
+    [visibleGraph.nodes, visibleGraph.edges, selectedNodeId],
+  )
+  const hasNodeFocus = selectedNodeId != null
+
   const flowNodes = useMemo(() => {
     const laidOut = layoutWithDagre(visibleGraph.nodes, visibleGraph.edges)
 
-    return visibleGraph.nodes.map((node) => ({
-      id: node.id,
-      type: 'person',
-      data: {
-        name: formatDisplayName(node.name),
-        team: getTeamDisplay(node),
-        highlighted: node.id === highlightedNodeId,
-      },
-      position: laidOut.get(node.id) ?? { x: 0, y: 0 },
-      selected: node.id === selectedNodeId,
-      sourcePosition: Position.Bottom,
-      targetPosition: Position.Top,
-    }))
-  }, [visibleGraph, selectedNodeId, highlightedNodeId])
+    return visibleGraph.nodes.map((node) => {
+      const isActive = activeNodeIds.has(node.id)
+      return {
+        id: node.id,
+        type: 'person',
+        data: {
+          name: formatDisplayName(node.name),
+          team: getTeamDisplay(node),
+          highlighted: node.id === highlightedNodeId,
+          isActive,
+        },
+        position: laidOut.get(node.id) ?? { x: 0, y: 0 },
+        selected: node.id === selectedNodeId,
+        sourcePosition: Position.Bottom,
+        targetPosition: Position.Top,
+        style: {
+          opacity: hasNodeFocus ? (isActive ? 1 : FOCUS_INACTIVE_NODE_OPACITY) : 1,
+          transition: OPACITY_TRANSITION,
+        },
+      }
+    })
+  }, [
+    visibleGraph,
+    selectedNodeId,
+    highlightedNodeId,
+    activeNodeIds,
+    hasNodeFocus,
+  ])
 
   const flowEdges = useMemo(
     () =>
       buildFlowEdgesWithHighlight(
         visibleGraph.edges,
-        selectedNodeId,
+        hasNodeFocus,
+        activeEdgeIds,
         highlightedEdgeId,
       ).map((edge) => {
         if (edge.id !== selectedEdgeId) return edge
@@ -261,7 +330,7 @@ export function GraphView({
           zIndex: 9998,
         }
       }),
-    [visibleGraph.edges, selectedNodeId, highlightedEdgeId, selectedEdgeId],
+    [visibleGraph.edges, hasNodeFocus, activeEdgeIds, highlightedEdgeId, selectedEdgeId],
   )
 
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState(flowNodes)
