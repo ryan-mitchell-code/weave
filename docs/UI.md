@@ -1,0 +1,123 @@
+# Weave — UI features
+
+This document describes the **frontend user experience** as implemented today: layout, graph behaviour, command bar, **context panel**, and visual design.
+
+**Related docs:** [PRD.md](../PRD.md) (product goals, MVP, roadmap) · [README.md](../README.md) (run instructions, repo layout)
+
+---
+
+## 1. Application shell
+
+| Area | Behaviour |
+|------|------------|
+| **Layout** | Full-height **Home** view: main graph column plus an optional **right-hand context panel** when a node or edge is selected. |
+| **Header** | App title (**Weave**), **quick command** input (center), **Focus mode** toggle. |
+| **Errors** | API/load/update failures surface as a **banner** at the top of the page. |
+| **Theme** | Dark, high-contrast workspace (Tailwind + small Radix-based controls). |
+
+---
+
+## 2. Graph canvas
+
+Built with **React Flow**; positions come from **Dagre** (top-to-bottom layering). **Nodes are not draggable**; the graph is read as a structured layout.
+
+### 2.1 Person nodes
+
+- **Card layout:** Circular **avatar** (initials from name), **bold name**, **team** line (or **Unassigned** when empty).
+- **Team colour:** Stable **palette per team** (hash of team label): avatar fill, left **accent bar**, optional subtle **card background** variation (`slate-800` vs `slate-800/80`).
+- **Unassigned:** Neutral **slate** avatar; team label **italic** and muted.
+- **Display normalisation:** Names and teams are shown in **title case** (words capitalised); matching in the command bar is **case-insensitive**.
+
+### 2.2 Selection and focus
+
+| Interaction | Effect |
+|-------------|--------|
+| **Click node** | Sets **persistent selection**; opens the **node** context panel; **recenters** the viewport on that node (animated). Clears transient **hover preview**. |
+| **Click edge** | Selects edge; opens the **edge** context panel; clears node selection and hover preview. |
+| **Click pane** | Clears node and edge selection and hover preview. |
+| **Hover node** | **Preview focus:** the **connected component** around the hovered node stays full **opacity**; other nodes **fade**. **Edges** in that component stay strong; others **dim**. Does not change click selection. |
+| **Hover leave** | Preview clears after a short delay (~75ms) to reduce flicker when moving between nodes. |
+
+When either **hover** or **selection** defines a focus anchor, **hover takes precedence** for dimming until the pointer leaves or you click (hover is cleared on node click).
+
+### 2.3 Focus mode (toggle)
+
+- **On:** Graph shows only the **selected node**, its **incident edges**, and **endpoints** of those edges.
+- **Off:** Full graph (still subject to focus dimming when a node is hovered or selected as above).
+- Requires a **selected node** to restrict the view; otherwise behaves like full graph.
+
+### 2.4 Edges
+
+- **Curved paths** (custom edge) with **parallel edge offset** when multiple links share the same pair of people.
+- **Colour by relationship type** (e.g. reports_to, depends_on, works_with).
+- **Arrow** markers indicate **direction** (source → target).
+- **Labels** on edges show the relationship type (human-readable).
+- **Selected edge** is drawn **thicker** and brought forward.
+- **Flash highlight** after quick-create or similar actions: edge **pulses** with stronger stroke (and participates in **dash flow** when active — see below).
+
+### 2.5 Active edge animation
+
+When an edge is **in the focused subgraph** (hover or selection) or is the **highlighted** edge:
+
+- **Animated dash** (`stroke-dasharray` + CSS `@keyframes flow`) for a subtle **directional flow**.
+- Slight **drop-shadow** tinted to the edge stroke.
+- **Inactive** edges under focus: **low opacity**, **no** animation, **no** glow.
+
+With **no** focus anchor, edges use the default calm styling (no global marching ants).
+
+### 2.6 Keyboard
+
+- **Delete:** Deletes the **selected node** when focus is not inside a text field (input/textarea/select). Graph and API update accordingly; selection clears if the node is removed.
+
+---
+
+## 3. Command bar (quick input)
+
+Single field for fast graph edits without opening the context panel for every change.
+
+| Capability | Details |
+|------------|---------|
+| **Add person** | `Name` or `Name TeamName` (team as remaining words). |
+| **Add edge** | `a -> b`, `a to b`, or two **known** names as tokens; optional **edge type** (e.g. suffix or `right -> type`). |
+| **Suggestions** | Filtered list of people while typing; **keyboard**: ArrowUp/Down, Enter, Tab to accept. |
+| **Loading** | Input disabled while graph is loading or a quick action is in flight. |
+
+Successful creates **flash** the new node or edge on the graph and may **update selection** for visibility.
+
+---
+
+## 4. Context panel
+
+The **context panel** (implementation: `components/home/details`) appears when a **node** or **edge** is selected. It is the primary place to **edit** selection details beyond the command bar.
+
+### Node
+
+- Edit **name** and **team** (inline inputs); **save on blur** or **Enter** on name field.
+- Read-only **type** and **id** metadata.
+- **Delete node** (button).
+- **Connections** list with formatted labels and edge types.
+
+### Edge
+
+- Change **relationship type** (dropdown / select aligned with API types).
+- Context for **source** and **target** nodes where applicable.
+
+**Note:** **Notes** and **tags** are planned in the PRD but **not** exposed in this panel yet.
+
+---
+
+## 5. File map (frontend)
+
+| Path | Role |
+|------|------|
+| `frontend/src/pages/Home.tsx` | Shell, selection state, focus mode, hover preview wiring. |
+| `frontend/src/graph/GraphView.tsx` | Layout, React Flow, focus sets, edge styles, hover handlers. |
+| `frontend/src/graph/PersonNode.tsx` | Person card rendering and selection ring. |
+| `frontend/src/graph/CustomEdge.tsx` | Edge geometry. |
+| `frontend/src/graph/graphTheme.ts` | Layout spacing and shared edge/node tokens. |
+| `frontend/src/graph/team.ts` | Team display labels (`Unassigned`, formatting). |
+| `frontend/src/graph/teamColors.ts` | Per-team colours for nodes. |
+| `frontend/src/components/home/QuickInputBar.tsx` | Command UI. |
+| `frontend/src/components/home/details/*` | Context panel sections. |
+| `frontend/src/pages/home/*` | Quick command logic, labels, hooks. |
+| `frontend/src/index.css` | Global base styles; **flow** keyframes for edges. |

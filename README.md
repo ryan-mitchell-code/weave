@@ -1,19 +1,21 @@
 # Weave
 
-Weave is a **single-user knowledge graph** for mapping how **people** connect at work: who collaborates with whom, reporting lines, dependencies, and team context. The app pairs a **Go REST API** (in-memory for now) with a **React** UI built around an interactive **React Flow** graph and a **command bar** for fast data entry.
+Weave is a **single-user relationship intelligence** workspace for tech leads: a **living map** of who works with whom, how people connect, and (eventually) **notes and context** per person. Today it is a **command-first graph** backed by a **Go REST API** (in-memory) and a **React** UI: **React Flow** visualisation, **command bar** for fast entry, and a **context panel** for editing the current selection.
 
-Product intent and roadmap live in [PRD.md](PRD.md).
+**Documentation:** [PRD.md](PRD.md) (product intent, MVP, phases) · [docs/UI.md](docs/UI.md) (UI behaviour: graph, command bar, context panel, keyboard)
 
 ---
 
 ## Features (current)
 
-- **People** as graph nodes with optional **team** metadata (team is a field, not a separate node type).
+- **People** as graph nodes with optional **team** metadata (team is a field, not a separate node type). **`notes`** exist on the API; **not yet in the UI** (see PRD).
 - **Typed relationships** between people (`works_with`, `reports_to`, `depends_on`, plus custom strings the API accepts).
-- **Interactive graph**: layout (Dagre), selection, focus mode, highlights after create/edit.
-- **Command bar**: quick add nodes and edges; suggestions with keyboard navigation.
-- **Inspector**: edit name/team, delete node, change edge type.
+- **Interactive graph**: Dagre layout, person-style nodes with **team colours**, selection, **hover preview**, **focus dimming**, **focus mode**, **animated active edges**, highlights after create/edit.
+- **Command bar**: quick add nodes and edges; forgiving syntax; suggestions with keyboard navigation.
+- **Context panel**: edit name/team, delete node, change edge type, view connections.
 - **Dark UI** (Tailwind + small Radix-based components).
+
+Details: **[docs/UI.md](docs/UI.md)**.
 
 ---
 
@@ -85,8 +87,10 @@ Data is stored **in memory** until persistence is added (see PRD).
 
 ```text
 weave/
-├── PRD.md                 # Product requirements & status
-├── tasks.md               # Historical task checklist (may lag PRD)
+├── PRD.md                 # Product requirements, MVP, phases
+├── docs/
+│   └── UI.md              # Frontend UI (graph, command bar, context panel)
+├── tasks.md               # Historical checklist (may lag PRD §4)
 ├── README.md              # This file
 ├── LICENSE                # MIT
 ├── backend/
