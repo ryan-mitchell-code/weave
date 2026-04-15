@@ -21,6 +21,10 @@ func main() {
 			handlers.GetNodes(w, r)
 		case http.MethodPost:
 			handlers.CreateNode(w, r)
+		case http.MethodPatch:
+			handlers.UpdateNode(w, r)
+		case http.MethodDelete:
+			handlers.DeleteNode(w, r)
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}

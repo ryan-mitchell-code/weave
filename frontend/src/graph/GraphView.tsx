@@ -194,9 +194,6 @@ export function GraphView({
       options?: { zoom?: number; duration?: number },
     ) => void
   } | null>(null)
-  const [positionCache] = useState<Map<string, { x: number; y: number }>>(
-    () => new Map(),
-  )
 
   const visibleGraph = useMemo(() => {
     if (!focusMode || !selectedNodeId) return { nodes, edges }
@@ -216,18 +213,6 @@ export function GraphView({
 
   const flowNodes = useMemo(() => {
     const laidOut = layoutWithDagre(visibleGraph.nodes, visibleGraph.edges)
-    const next = new Map<string, { x: number; y: number }>(positionCache)
-    const existingNodeIds = new Set(nodes.map((n) => n.id))
-
-    for (const node of visibleGraph.nodes) {
-      if (next.has(node.id)) continue
-      next.set(node.id, laidOut.get(node.id) ?? { x: 0, y: 0 })
-    }
-    for (const id of [...next.keys()]) {
-      if (!existingNodeIds.has(id)) next.delete(id)
-    }
-    positionCache.clear()
-    for (const [id, pos] of next.entries()) positionCache.set(id, pos)
 
     return visibleGraph.nodes.map((node) => ({
       id: node.id,
@@ -237,12 +222,12 @@ export function GraphView({
         team: node.team?.trim() ?? '',
         highlighted: node.id === highlightedNodeId,
       },
-      position: next.get(node.id) ?? { x: 0, y: 0 },
+      position: laidOut.get(node.id) ?? { x: 0, y: 0 },
       selected: node.id === selectedNodeId,
       sourcePosition: Position.Bottom,
       targetPosition: Position.Top,
     }))
-  }, [visibleGraph, selectedNodeId, highlightedNodeId, nodes, positionCache])
+  }, [visibleGraph, selectedNodeId, highlightedNodeId])
 
   const flowEdges = useMemo(
     () =>

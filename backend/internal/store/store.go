@@ -11,6 +11,7 @@ import (
 
 var ErrDuplicateEdge = errors.New("duplicate edge")
 var ErrEdgeNotFound = errors.New("edge not found")
+var ErrNodeNotFound = errors.New("node not found")
 
 var (
 	mu sync.RWMutex
@@ -25,6 +26,55 @@ func AddNode(n models.Node) {
 	mu.Lock()
 	defer mu.Unlock()
 	Nodes = append(Nodes, n)
+}
+
+func UpdateNode(id, name, team string) (models.Node, error) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	for i := range Nodes {
+		if Nodes[i].ID != id {
+			continue
+		}
+		updated := Nodes[i]
+		updated.Name = name
+		updated.Team = team
+		Nodes[i] = updated
+		return updated, nil
+	}
+
+	return models.Node{}, ErrNodeNotFound
+}
+
+func DeleteNode(id string) (models.Node, error) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	nodeIdx := -1
+	var deleted models.Node
+	for i := range Nodes {
+		if Nodes[i].ID == id {
+			nodeIdx = i
+			deleted = Nodes[i]
+			break
+		}
+	}
+	if nodeIdx == -1 {
+		return models.Node{}, ErrNodeNotFound
+	}
+
+	Nodes = append(Nodes[:nodeIdx], Nodes[nodeIdx+1:]...)
+
+	filtered := Edges[:0]
+	for _, e := range Edges {
+		if e.FromID == id || e.ToID == id {
+			continue
+		}
+		filtered = append(filtered, e)
+	}
+	Edges = filtered
+
+	return deleted, nil
 }
 
 func AddEdge(e models.Edge) error {

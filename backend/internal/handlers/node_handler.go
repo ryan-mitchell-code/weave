@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -40,4 +41,68 @@ func CreateNode(w http.ResponseWriter, r *http.Request) {
 
 func GetNodes(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, store.SnapshotNodes())
+}
+
+type updateNodeRequest struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Team string `json:"team"`
+}
+
+func UpdateNode(w http.ResponseWriter, r *http.Request) {
+	var req updateNodeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	req.ID = strings.TrimSpace(req.ID)
+	req.Name = strings.TrimSpace(req.Name)
+	req.Team = strings.TrimSpace(req.Team)
+	if req.ID == "" || req.Name == "" {
+		writeError(w, http.StatusBadRequest, "id and name are required")
+		return
+	}
+
+	updated, err := store.UpdateNode(req.ID, req.Name, req.Team)
+	if err != nil {
+		if errors.Is(err, store.ErrNodeNotFound) {
+			writeError(w, http.StatusNotFound, "node not found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, updated)
+}
+
+type deleteNodeRequest struct {
+	ID string `json:"id"`
+}
+
+func DeleteNode(w http.ResponseWriter, r *http.Request) {
+	var req deleteNodeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	req.ID = strings.TrimSpace(req.ID)
+	if req.ID == "" {
+		writeError(w, http.StatusBadRequest, "id is required")
+		return
+	}
+
+	deleted, err := store.DeleteNode(req.ID)
+	if err != nil {
+		if errors.Is(err, store.ErrNodeNotFound) {
+			writeError(w, http.StatusNotFound, "node not found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, deleted)
 }

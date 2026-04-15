@@ -58,6 +58,38 @@ export async function createNode(input: CreateNodeInput): Promise<Node> {
   return parseJson<Node>(res)
 }
 
+export interface UpdateNodeInput {
+  id: string
+  name: string
+  team?: string
+}
+
+export async function updateNode(input: UpdateNodeInput): Promise<Node> {
+  const res = await fetch(`${baseUrl}/nodes`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      id: input.id,
+      name: input.name,
+      team: input.team,
+    }),
+  })
+  return parseJson<Node>(res)
+}
+
+export interface DeleteNodeInput {
+  id: string
+}
+
+export async function deleteNode(input: DeleteNodeInput): Promise<Node> {
+  const res = await fetch(`${baseUrl}/nodes`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: input.id }),
+  })
+  return parseJson<Node>(res)
+}
+
 export interface CreateEdgeInput {
   from_id: string
   to_id: string

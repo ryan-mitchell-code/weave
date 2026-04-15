@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   createEdge,
   createNode,
+  deleteNode,
   fetchGraph,
+  updateNode,
   updateEdgeType,
   type Edge,
   type Node,
@@ -26,6 +28,9 @@ export default function Home() {
   const [quickInput, setQuickInput] = useState('')
   const [quickSaving, setQuickSaving] = useState(false)
   const [edgeTypeSaving, setEdgeTypeSaving] = useState(false)
+  const [nodeSaving, setNodeSaving] = useState(false)
+  const [nodeNameDraft, setNodeNameDraft] = useState('')
+  const [nodeTeamDraft, setNodeTeamDraft] = useState('')
   const [recentNodeIds, setRecentNodeIds] = useState<string[]>([])
   const [quickSuggestionsOpen, setQuickSuggestionsOpen] = useState(false)
   const [focusMode, setFocusMode] = useState(false)
@@ -89,6 +94,12 @@ export default function Home() {
       : edges.filter(
           (e) => e.from_id === selectedNodeId || e.to_id === selectedNodeId,
         )
+
+  useEffect(() => {
+    if (!selectedNode) return
+    setNodeNameDraft(selectedNode.name)
+    setNodeTeamDraft(selectedNode.team ?? '')
+  }, [selectedNode])
 
   function markRecentNode(nodeId: string) {
     setRecentNodeIds((prev) => [nodeId, ...prev.filter((id) => id !== nodeId)].slice(0, 10))
@@ -300,6 +311,63 @@ export default function Home() {
       setEdgeTypeSaving(false)
     }
   }
+
+  async function persistSelectedNode(name: string, team: string) {
+    if (!selectedNode || nodeSaving) return
+    const nextName = name.trim()
+    const nextTeam = team.trim()
+    if (!nextName) {
+      setNodeNameDraft(selectedNode.name)
+      setError('Name is required.')
+      return
+    }
+    if (nextName === selectedNode.name && nextTeam === (selectedNode.team ?? '')) return
+    setNodeSaving(true)
+    setError(null)
+    try {
+      const updated = await updateNode({
+        id: selectedNode.id,
+        name: nextName,
+        team: nextTeam || undefined,
+      })
+      setNodes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)))
+      setNodeNameDraft(updated.name)
+      setNodeTeamDraft(updated.team ?? '')
+      markRecentNode(updated.id)
+      flashNode(updated.id)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not update node.')
+    } finally {
+      setNodeSaving(false)
+    }
+  }
+
+  const handleDeleteNode = useCallback(async (nodeId: string) => {
+    setError(null)
+    try {
+      await deleteNode({ id: nodeId })
+      setNodes((prev) => prev.filter((n) => n.id !== nodeId))
+      setEdges((prev) => prev.filter((e) => e.from_id !== nodeId && e.to_id !== nodeId))
+      setSelectedNodeId(null)
+      setSelectedEdgeId(null)
+      setHighlightedNodeId((curr) => (curr === nodeId ? null : curr))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not delete node.')
+    }
+  }, [])
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== 'Delete' || !selectedNodeId) return
+      const target = e.target as HTMLElement | null
+      const tag = target?.tagName?.toLowerCase()
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return
+      e.preventDefault()
+      void handleDeleteNode(selectedNodeId)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [selectedNodeId, handleDeleteNode])
 
   function nodeLabel(id: string): string {
     const n = nodes.find((x) => x.id === id)
@@ -529,21 +597,67 @@ export default function Home() {
             )}
             {selectedNode && (
               <>
-                <p style={{ marginBottom: 4 }}>
-                  <strong>Name:</strong> {selectedNode.name}
-                </p>
+                <label htmlFor="node-name-edit" style={{ display: 'block', marginBottom: 4 }}>
+                  <strong>Name</strong>
+                </label>
+                <input
+                  id="node-name-edit"
+                  value={nodeNameDraft}
+                  onChange={(e) => setNodeNameDraft(e.target.value)}
+                  onBlur={() => {
+                    void persistSelectedNode(nodeNameDraft, nodeTeamDraft)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      ;(e.currentTarget as HTMLInputElement).blur()
+                    }
+                  }}
+                  disabled={nodeSaving}
+                  style={{ width: '100%', boxSizing: 'border-box', marginBottom: 10 }}
+                />
                 <p style={{ marginBottom: 4 }}>
                   <strong>Type:</strong> {selectedNode.type}
                 </p>
-                <p style={{ marginBottom: 4 }}>
-                  <strong>Team:</strong> {selectedNode.team?.trim() || '—'}
-                </p>
+                <label htmlFor="node-team-edit" style={{ display: 'block', marginBottom: 4 }}>
+                  <strong>Team</strong>
+                </label>
+                <input
+                  id="node-team-edit"
+                  value={nodeTeamDraft}
+                  onChange={(e) => setNodeTeamDraft(e.target.value)}
+                  onBlur={() => {
+                    void persistSelectedNode(nodeNameDraft, nodeTeamDraft)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      ;(e.currentTarget as HTMLInputElement).blur()
+                    }
+                  }}
+                  disabled={nodeSaving}
+                  style={{ width: '100%', boxSizing: 'border-box', marginBottom: 10 }}
+                />
                 <p style={{ marginBottom: 12 }}>
                   <strong>ID:</strong>{' '}
                   <span style={{ fontSize: '0.85em', color: '#555' }}>
                     {selectedNode.id}
                   </span>
                 </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleDeleteNode(selectedNode.id)
+                  }}
+                  style={{
+                    marginBottom: 12,
+                    background: '#fff1f2',
+                    borderColor: '#fecdd3',
+                    color: '#be123c',
+                  }}
+                >
+                  Delete node
+                </button>
                 <h3 style={{ fontSize: '0.95rem', marginBottom: 8 }}>Connections</h3>
                 {connectedEdges.length === 0 && <p>No connections.</p>}
                 {connectedEdges.length > 0 && (
