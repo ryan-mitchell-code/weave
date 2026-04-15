@@ -6,6 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../ui/select'
+import { InspectorLabel, InspectorMeta, InspectorSection, InspectorValue } from './primitives'
 
 export type EdgeDetailsSectionProps = {
   selectedEdge: Edge
@@ -25,19 +26,17 @@ export function EdgeDetailsSection({
   onEdgeTypeChange,
 }: EdgeDetailsSectionProps) {
   return (
-    <div className="space-y-3 rounded-lg border border-slate-700 bg-slate-800 p-3">
+    <InspectorSection className="space-y-3">
       <div className="space-y-1">
-        <p className="m-0 text-xs text-slate-400">From</p>
-        <p className="m-0 text-sm text-slate-200">{nodeLabel(selectedEdge.from_id)}</p>
+        <InspectorLabel>From</InspectorLabel>
+        <InspectorValue>{nodeLabel(selectedEdge.from_id)}</InspectorValue>
       </div>
       <div className="space-y-1">
-        <p className="m-0 text-xs text-slate-400">To</p>
-        <p className="m-0 text-sm text-slate-200">{nodeLabel(selectedEdge.to_id)}</p>
+        <InspectorLabel>To</InspectorLabel>
+        <InspectorValue>{nodeLabel(selectedEdge.to_id)}</InspectorValue>
       </div>
       <div className="space-y-1">
-        <label htmlFor="edge-type-edit" className="block text-xs text-slate-400">
-          Type
-        </label>
+        <InspectorLabel htmlFor="edge-type-edit">Type</InspectorLabel>
         <Select
           value={selectedEdge.type}
           onValueChange={(value) => {
@@ -57,9 +56,9 @@ export function EdgeDetailsSection({
           </SelectContent>
         </Select>
       </div>
-      <p className="m-0 text-xs text-slate-500">
+      <InspectorMeta>
         {edgeTypeSaving ? 'Updating...' : `Edge ID: ${selectedEdge.id}`}
-      </p>
-    </div>
+      </InspectorMeta>
+    </InspectorSection>
   )
 }

@@ -11,6 +11,7 @@ import ReactFlow, {
 } from 'reactflow'
 import type { Edge, Node } from '../api/client'
 import CustomEdge from './CustomEdge'
+import { GRAPH_THEME } from './graphTheme'
 import OrgNode from './OrgNode'
 
 import 'reactflow/dist/style.css'
@@ -19,8 +20,8 @@ const edgeTypes = { custom: CustomEdge }
 const nodeTypes = { org: OrgNode }
 
 /** Match OrgNode outer dimensions for Dagre. */
-const NODE_WIDTH = 180
-const NODE_HEIGHT = 48
+const NODE_WIDTH = GRAPH_THEME.node.width
+const NODE_HEIGHT = GRAPH_THEME.node.height
 
 function formatKindLabel(kind: string): string {
   const spaced = kind.replace(/_/g, ' ')
@@ -38,10 +39,10 @@ function layoutWithDagre(
   g.setDefaultEdgeLabel(() => ({}))
   g.setGraph({
     rankdir: 'TB',
-    nodesep: 48,
-    ranksep: 72,
-    marginx: 24,
-    marginy: 24,
+    nodesep: GRAPH_THEME.layout.nodesep,
+    ranksep: GRAPH_THEME.layout.ranksep,
+    marginx: GRAPH_THEME.layout.marginx,
+    marginy: GRAPH_THEME.layout.marginy,
   })
 
   for (const n of nodes) {
@@ -102,9 +103,15 @@ function buildFlowEdges(edges: Edge[], selectedNodeId: string | null) {
       !selectedNodeId ||
       edge.from_id === selectedNodeId ||
       edge.to_id === selectedNodeId
-    const edgeOpacity = selectedNodeId ? (connected ? 1 : 0.05) : 0.42
-    const strokeWidth = selectedNodeId && connected ? 2 : 1
-    const labelOpacity = selectedNodeId ? (connected ? 1 : 0.2) : 0.88
+    const edgeOpacity = selectedNodeId
+      ? (connected ? 1 : GRAPH_THEME.edge.dimmedOpacity)
+      : GRAPH_THEME.edge.defaultOpacity
+    const strokeWidth = selectedNodeId && connected
+      ? GRAPH_THEME.edge.connectedStrokeWidth
+      : GRAPH_THEME.edge.defaultStrokeWidth
+    const labelOpacity = selectedNodeId
+      ? (connected ? 1 : GRAPH_THEME.edge.labelDimmedOpacity)
+      : GRAPH_THEME.edge.labelDefaultOpacity
 
     return {
       id: edge.id,
@@ -124,15 +131,17 @@ function buildFlowEdges(edges: Edge[], selectedNodeId: string | null) {
       },
       labelStyle: {
         fontSize: 11,
-        fill: `rgba(226, 232, 240, ${labelOpacity})`,
+        fill: `rgba(${GRAPH_THEME.edge.labelFillRgb}, ${labelOpacity})`,
         fontWeight: 500,
       },
       labelShowBg: true,
       labelBgStyle: {
-        fill: '#1e293b',
-        fillOpacity: selectedNodeId ? (connected ? 0.95 : 0.35) : 0.85,
+        fill: GRAPH_THEME.edge.labelBg,
+        fillOpacity: selectedNodeId
+          ? (connected ? GRAPH_THEME.edge.labelBgConnectedOpacity : GRAPH_THEME.edge.labelBgDimmedOpacity)
+          : GRAPH_THEME.edge.labelBgDefaultOpacity,
       },
-      labelBgPadding: [4, 2] as [number, number],
+      labelBgPadding: GRAPH_THEME.edge.labelBgPadding,
     }
   })
 }
@@ -152,7 +161,7 @@ function buildFlowEdgesWithHighlight(
       style: {
         ...style,
         opacity: 1,
-        strokeWidth: Math.max(Number(style.strokeWidth ?? 1), 2.8),
+        strokeWidth: Math.max(Number(style.strokeWidth ?? 1), GRAPH_THEME.edge.highlightedStrokeWidth),
       },
       animated: true,
       zIndex: 9999,
@@ -245,7 +254,7 @@ export function GraphView({
           style: {
             ...style,
             opacity: 1,
-            strokeWidth: Math.max(Number(style.strokeWidth ?? 1), 2.4),
+            strokeWidth: Math.max(Number(style.strokeWidth ?? 1), GRAPH_THEME.edge.selectedStrokeWidth),
           },
           zIndex: 9998,
         }
@@ -280,10 +289,10 @@ export function GraphView({
       style={{
         width: '100%',
         height,
-        borderRadius: 12,
+        borderRadius: GRAPH_THEME.canvas.borderRadius,
         overflow: 'hidden',
-        border: '1px solid #1e293b',
-        background: '#1e293b',
+        border: `1px solid ${GRAPH_THEME.canvas.border}`,
+        background: GRAPH_THEME.canvas.background,
       }}
     >
       <ReactFlow
@@ -308,7 +317,7 @@ export function GraphView({
           variant={BackgroundVariant.Dots}
           gap={14}
           size={1}
-          color="#475569"
+          color={GRAPH_THEME.canvas.dots}
         />
         <Controls showInteractive={false} />
       </ReactFlow>

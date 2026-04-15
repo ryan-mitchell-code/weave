@@ -1,5 +1,6 @@
 import { memo } from 'react'
 import { Handle, Position, type NodeProps } from 'reactflow'
+import { GRAPH_THEME, TEAM_PALETTES } from './graphTheme'
 
 export type OrgNodeData = {
   label: string
@@ -7,39 +8,12 @@ export type OrgNodeData = {
   highlighted?: boolean
 }
 
-const teamPalettes = [
-  {
-    bg: '#1e293b',
-    border: '#16a34a',
-    text: '#dcfce7',
-    handle: '#22c55e',
-  },
-  {
-    bg: '#1e293b',
-    border: '#0284c7',
-    text: '#e0f2fe',
-    handle: '#38bdf8',
-  },
-  {
-    bg: '#1e293b',
-    border: '#ca8a04',
-    text: '#fef3c7',
-    handle: '#f59e0b',
-  },
-  {
-    bg: '#1e293b',
-    border: '#9333ea',
-    text: '#f3e8ff',
-    handle: '#a855f7',
-  },
-] as const
-
 function paletteForTeam(team: string) {
   const key = team.trim().toLowerCase()
-  if (!key) return teamPalettes[0]
+  if (!key) return TEAM_PALETTES[0]
   let hash = 0
   for (let i = 0; i < key.length; i += 1) hash = (hash * 31 + key.charCodeAt(i)) | 0
-  return teamPalettes[Math.abs(hash) % teamPalettes.length]
+  return TEAM_PALETTES[Math.abs(hash) % TEAM_PALETTES.length]
 }
 
 function OrgNode({ data, selected }: NodeProps<OrgNodeData>) {
@@ -48,9 +22,9 @@ function OrgNode({ data, selected }: NodeProps<OrgNodeData>) {
   return (
     <div
       style={{
-        width: 180,
+        width: GRAPH_THEME.node.width,
         boxSizing: 'border-box',
-        height: 48,
+        height: GRAPH_THEME.node.height,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -60,15 +34,15 @@ function OrgNode({ data, selected }: NodeProps<OrgNodeData>) {
         background: p.bg,
         border: `1px solid ${p.border}`,
         color: p.text,
-        fontSize: 13,
-        fontWeight: 500,
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        lineHeight: 1.35,
+        fontSize: GRAPH_THEME.node.fontSize,
+        fontWeight: GRAPH_THEME.node.fontWeight,
+        fontFamily: GRAPH_THEME.node.fontFamily,
+        lineHeight: GRAPH_THEME.node.lineHeight,
         boxShadow: selected
-          ? '0 0 0 3px rgba(59, 130, 246, 0.35), 0 6px 20px rgba(2, 6, 23, 0.45)'
+          ? GRAPH_THEME.node.selectedShadow
           : highlighted
-            ? '0 0 0 3px rgba(250, 204, 21, 0.4), 0 8px 24px rgba(2, 6, 23, 0.5)'
-          : '0 2px 10px rgba(2, 6, 23, 0.4)',
+            ? GRAPH_THEME.node.highlightedShadow
+          : GRAPH_THEME.node.defaultShadow,
         transition: 'box-shadow 0.15s ease',
       }}
     >

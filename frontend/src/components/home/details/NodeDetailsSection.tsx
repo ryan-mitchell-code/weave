@@ -1,6 +1,7 @@
 import type { Edge, Node } from '../../../api/client'
 import { Button } from '../../ui/button'
 import { Input } from '../../ui/input'
+import { InspectorLabel, InspectorMeta, InspectorSection, InspectorValue } from './primitives'
 
 export type NodeDetailsSectionProps = {
   selectedNode: Node
@@ -31,11 +32,9 @@ export function NodeDetailsSection({
 }: NodeDetailsSectionProps) {
   return (
     <div className="space-y-4">
-      <div className="space-y-3 rounded-lg border border-slate-700 bg-slate-800 p-3">
+      <InspectorSection className="space-y-3">
         <div className="space-y-1">
-          <label htmlFor="node-name-edit" className="block text-xs text-slate-400">
-            Name
-          </label>
+          <InspectorLabel htmlFor="node-name-edit">Name</InspectorLabel>
           <Input
             id="node-name-edit"
             value={nodeNameDraft}
@@ -54,13 +53,11 @@ export function NodeDetailsSection({
           />
         </div>
         <div className="space-y-1">
-          <p className="m-0 text-xs text-slate-400">Type</p>
-          <p className="m-0 text-sm text-slate-200">{selectedNode.type}</p>
+          <InspectorLabel>Type</InspectorLabel>
+          <InspectorValue>{selectedNode.type}</InspectorValue>
         </div>
         <div className="space-y-1">
-          <label htmlFor="node-team-edit" className="block text-xs text-slate-400">
-            Team
-          </label>
+          <InspectorLabel htmlFor="node-team-edit">Team</InspectorLabel>
           <Input
             id="node-team-edit"
             value={nodeTeamDraft}
@@ -79,10 +76,10 @@ export function NodeDetailsSection({
           />
         </div>
         <div className="space-y-1">
-          <p className="m-0 text-xs text-slate-500">ID</p>
-          <p className="m-0 text-xs text-slate-500">{selectedNode.id}</p>
+          <InspectorMeta>ID</InspectorMeta>
+          <InspectorMeta>{selectedNode.id}</InspectorMeta>
         </div>
-      </div>
+      </InspectorSection>
 
       <div className="border-t border-slate-800 pt-4">
         <Button
@@ -97,9 +94,9 @@ export function NodeDetailsSection({
         </Button>
       </div>
 
-      <div className="space-y-2 rounded-lg border border-slate-700 bg-slate-800 p-3">
+      <InspectorSection>
         <h3 className="text-sm font-semibold text-slate-100">Connections</h3>
-        {connectedEdges.length === 0 && <p className="m-0 text-sm text-slate-200">No connections.</p>}
+        {connectedEdges.length === 0 && <InspectorValue>No connections.</InspectorValue>}
         {connectedEdges.length > 0 && (
           <ul className="m-0 list-disc space-y-2 pl-[1.1rem]">
             {connectedEdges.map((ed) => {
@@ -118,7 +115,7 @@ export function NodeDetailsSection({
             })}
           </ul>
         )}
-      </div>
+      </InspectorSection>
     </div>
   )
 }

@@ -36,6 +36,7 @@ export default function Home() {
   const [nodeTeamDraft, setNodeTeamDraft] = useState('')
   const [recentNodeIds, setRecentNodeIds] = useState<string[]>([])
   const [quickSuggestionsOpen, setQuickSuggestionsOpen] = useState(false)
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
   const [focusMode, setFocusMode] = useState(false)
   const [highlightedNodeId, setHighlightedNodeId] = useState<string | null>(null)
   const [highlightedEdgeId, setHighlightedEdgeId] = useState<string | null>(null)
@@ -205,9 +206,20 @@ export default function Home() {
     return rankSuggestedNodes(filtered, q).slice(0, 8)
   }, [nodes, quickContext, findNodeByName, rankSuggestedNodes])
 
+  const quickListboxId = 'quick-input-suggestions'
+
+  useEffect(() => {
+    if (!quickSuggestionsOpen || quickSuggestions.length === 0) {
+      setActiveSuggestionIndex(-1)
+      return
+    }
+    setActiveSuggestionIndex((current) => Math.min(current, quickSuggestions.length - 1))
+  }, [quickSuggestionsOpen, quickSuggestions.length])
+
   function applyQuickSuggestion(nodeName: string) {
     const n = findNodeByName(nodeName)
     if (!n) return
+    setActiveSuggestionIndex(-1)
     navigateToNode(n.id, n.name)
   }
 
@@ -289,6 +301,7 @@ export default function Home() {
       }
       setQuickInput('')
       setQuickSuggestionsOpen(false)
+      setActiveSuggestionIndex(-1)
     } catch (err) {
       setError(
         err instanceof Error
@@ -398,17 +411,49 @@ export default function Home() {
                 aria-label="Quick add node or edge"
                 type="text"
                 value={quickInput}
-                onChange={(e) => setQuickInput(e.target.value)}
-                onFocus={() => setQuickSuggestionsOpen(true)}
+                role="combobox"
+                aria-expanded={quickSuggestionsOpen && quickSuggestions.length > 0}
+                aria-controls={quickListboxId}
+                aria-activedescendant={
+                  activeSuggestionIndex >= 0 && quickSuggestions[activeSuggestionIndex]
+                    ? `${quickListboxId}-${quickSuggestions[activeSuggestionIndex].id}`
+                    : undefined
+                }
+                onChange={(e) => {
+                  setQuickInput(e.target.value)
+                  setActiveSuggestionIndex(-1)
+                }}
+                onFocus={() => {
+                  setQuickSuggestionsOpen(true)
+                }}
                 onBlur={() => {
                   window.setTimeout(() => setQuickSuggestionsOpen(false), 120)
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+                  if (e.key === 'ArrowDown' && quickSuggestions.length > 0) {
+                    e.preventDefault()
+                    setQuickSuggestionsOpen(true)
+                    setActiveSuggestionIndex((idx) => (idx + 1) % quickSuggestions.length)
+                  } else if (e.key === 'ArrowUp' && quickSuggestions.length > 0) {
+                    e.preventDefault()
+                    setQuickSuggestionsOpen(true)
+                    setActiveSuggestionIndex((idx) =>
+                      idx <= 0 ? quickSuggestions.length - 1 : idx - 1,
+                    )
+                  } else if (
+                    e.key === 'Enter' &&
+                    quickSuggestionsOpen &&
+                    activeSuggestionIndex >= 0 &&
+                    quickSuggestions[activeSuggestionIndex]
+                  ) {
+                    e.preventDefault()
+                    applyQuickSuggestion(quickSuggestions[activeSuggestionIndex].name)
+                  } else if (e.key === 'Enter') {
                     e.preventDefault()
                     void handleQuickCreate()
                   } else if (e.key === 'Escape') {
                     setQuickSuggestionsOpen(false)
+                    setActiveSuggestionIndex(-1)
                   }
                 }}
                 placeholder='Quick add: "alice payments" or "alice -> bob"'
@@ -418,19 +463,29 @@ export default function Home() {
               {quickSuggestionsOpen &&
                 quickInput.trim() !== '' &&
                 quickSuggestions.length > 0 && (
-                  <div className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 shadow-lg">
+                  <div
+                    id={quickListboxId}
+                    role="listbox"
+                    className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 shadow-lg"
+                  >
                     {quickContext.mode === 'edge' && (
                       <div className="border-b border-slate-700 px-2.5 py-1.5 text-xs text-slate-400">
                         Suggested nodes
                       </div>
                     )}
-                    {quickSuggestions.map((n) => (
+                    {quickSuggestions.map((n, idx) => (
                       <button
                         key={n.id}
+                        id={`${quickListboxId}-${n.id}`}
+                        role="option"
+                        aria-selected={idx === activeSuggestionIndex}
                         type="button"
                         onMouseDown={(e) => e.preventDefault()}
+                        onMouseEnter={() => setActiveSuggestionIndex(idx)}
                         onClick={() => applyQuickSuggestion(n.name)}
-                        className="block w-full cursor-pointer border-none bg-transparent px-2.5 py-2 text-left hover:bg-slate-700"
+                        className={`block w-full cursor-pointer border-none bg-transparent px-2.5 py-2 text-left hover:bg-slate-700 ${
+                          idx === activeSuggestionIndex ? 'bg-slate-700' : ''
+                        }`}
                       >
                         <div className="text-sm">{n.name}</div>
                         {n.team?.trim() && (
