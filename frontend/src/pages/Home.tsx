@@ -130,8 +130,13 @@ export default function Home() {
     setSelectedNodeId(nodeId)
     setSelectedEdgeId(null)
     markRecentNode(nodeId)
-    setQuickSuggestionsOpen(false)
-    if (typeof inputValue === 'string') setQuickInput(inputValue)
+    if (typeof inputValue === 'string') {
+      setQuickInput(inputValue)
+      // Programmatic value updates do not fire onChange; keep the list usable for Tab / further typing.
+      setQuickSuggestionsOpen(true)
+    } else {
+      setQuickSuggestionsOpen(false)
+    }
   }
 
   const rankSuggestedNodes = useCallback((list: Node[], query: string): Node[] => {
@@ -220,6 +225,12 @@ export default function Home() {
     const n = findNodeByName(nodeName)
     if (!n) return
     setActiveSuggestionIndex(-1)
+    if (quickContext.mode === 'edge') {
+      const sep = quickContext.delimiter === 'to' ? ' to ' : ' -> '
+      const nextInput = `${quickContext.left}${sep}${nodeName.trim()}`
+      navigateToNode(n.id, nextInput)
+      return
+    }
     navigateToNode(n.id, n.name)
   }
 
@@ -420,8 +431,10 @@ export default function Home() {
                     : undefined
                 }
                 onChange={(e) => {
-                  setQuickInput(e.target.value)
+                  const v = e.target.value
+                  setQuickInput(v)
                   setActiveSuggestionIndex(-1)
+                  if (v.trim() !== '') setQuickSuggestionsOpen(true)
                 }}
                 onFocus={() => {
                   setQuickSuggestionsOpen(true)
@@ -448,6 +461,20 @@ export default function Home() {
                   ) {
                     e.preventDefault()
                     applyQuickSuggestion(quickSuggestions[activeSuggestionIndex].name)
+                  } else if (
+                    e.key === 'Tab' &&
+                    !e.shiftKey &&
+                    quickSuggestionsOpen &&
+                    quickInput.trim() !== '' &&
+                    quickSuggestions.length > 0
+                  ) {
+                    const idx =
+                      activeSuggestionIndex >= 0 ? activeSuggestionIndex : 0
+                    const pick = quickSuggestions[idx]
+                    if (pick) {
+                      e.preventDefault()
+                      applyQuickSuggestion(pick.name)
+                    }
                   } else if (e.key === 'Enter') {
                     e.preventDefault()
                     void handleQuickCreate()
