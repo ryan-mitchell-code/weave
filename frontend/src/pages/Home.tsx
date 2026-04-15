@@ -24,6 +24,7 @@ export default function Home() {
   const [edgeType, setEdgeType] = useState('works_with')
   const [edgeSaving, setEdgeSaving] = useState(false)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+  const [activeComposer, setActiveComposer] = useState<'node' | 'edge'>('node')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -130,257 +131,275 @@ export default function Home() {
   const toNodeOptions = nodes.filter((n) => n.id !== edgeFromId)
 
   return (
-    <main style={{ maxWidth: 560, fontFamily: 'system-ui, sans-serif' }}>
-      <h1 style={{ fontSize: '1.25rem' }}>OrgGraph</h1>
-
+    <main
+      style={{
+        height: '100dvh',
+        fontFamily: 'system-ui, sans-serif',
+        color: '#0f172a',
+        background: '#f8fafc',
+      }}
+    >
       {error && (
-        <p role="alert" style={{ color: 'crimson', marginBottom: 16 }}>
+        <p
+          role="alert"
+          style={{
+            color: 'crimson',
+            margin: 0,
+            padding: '8px 12px',
+            borderBottom: '1px solid #fecaca',
+            background: '#fff1f2',
+          }}
+        >
           {error}
         </p>
       )}
+      <div style={{ display: 'flex', height: '100%', minHeight: 0 }}>
+        <aside
+          style={{
+            width: 220,
+            minWidth: 220,
+            borderRight: '1px solid #e2e8f0',
+            padding: 12,
+            overflow: 'auto',
+            background: '#fff',
+          }}
+        >
+          <h2 style={{ fontSize: '1rem', margin: '0 0 8px 0' }}>Compose</h2>
+          {activeComposer === 'node' && (
+            <form onSubmit={handleSubmit} style={{ marginBottom: 14 }}>
+              <div style={{ marginBottom: 8 }}>
+                <label htmlFor="node-name" style={{ display: 'block' }}>
+                  Name
+                </label>
+                <input
+                  id="node-name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  autoComplete="off"
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                <label htmlFor="node-team" style={{ display: 'block' }}>
+                  Team
+                </label>
+                <input
+                  id="node-team"
+                  type="text"
+                  value={team}
+                  onChange={(e) => setTeam(e.target.value)}
+                  autoComplete="off"
+                  placeholder="e.g. Payments"
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                />
+              </div>
+              <button type="submit" disabled={saving || nameTrimmed === ''}>
+                {saving ? 'Saving…' : 'Create node'}
+              </button>
+            </form>
+          )}
+          {activeComposer === 'edge' && (
+            <form onSubmit={handleCreateEdge} style={{ marginBottom: 14 }}>
+              <div style={{ marginBottom: 8 }}>
+                <label htmlFor="edge-from" style={{ display: 'block' }}>
+                  From node
+                </label>
+                <select
+                  id="edge-from"
+                  value={edgeFromId}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setEdgeFromId(v)
+                    if (edgeToId === v) setEdgeToId('')
+                  }}
+                  required
+                  disabled={loading || nodes.length === 0}
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                >
+                  <option value="" disabled>
+                    Select node…
+                  </option>
+                  {nodes.map((n) => (
+                    <option key={n.id} value={n.id}>
+                      {nodeLabel(n.id)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                <label htmlFor="edge-to" style={{ display: 'block' }}>
+                  To node
+                </label>
+                <select
+                  id="edge-to"
+                  value={edgeToId}
+                  onChange={(e) => setEdgeToId(e.target.value)}
+                  required
+                  disabled={
+                    loading || nodes.length === 0 || toNodeOptions.length === 0
+                  }
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                >
+                  <option value="" disabled>
+                    {edgeFromId
+                      ? 'Select node…'
+                      : 'Choose a “from” node first…'}
+                  </option>
+                  {toNodeOptions.map((n) => (
+                    <option key={n.id} value={n.id}>
+                      {nodeLabel(n.id)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                <label htmlFor="edge-type" style={{ display: 'block' }}>
+                  Relationship type
+                </label>
+                <select
+                  id="edge-type"
+                  value={edgeType}
+                  onChange={(e) => setEdgeType(e.target.value)}
+                  disabled={loading || nodes.length === 0}
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                >
+                  <option value="works_with">works_with</option>
+                  <option value="reports_to">reports_to</option>
+                  <option value="depends_on">depends_on</option>
+                </select>
+              </div>
+              <button type="submit" disabled={edgeSubmitDisabled}>
+                {edgeSaving ? 'Saving…' : 'Create edge'}
+              </button>
+              {!loading && nodes.length === 0 && (
+                <p style={{ color: '#555', fontSize: '0.9rem' }}>
+                  Add at least one node to create edges.
+                </p>
+              )}
+              {!loading && nodes.length === 1 && (
+                <p style={{ color: '#555', fontSize: '0.9rem' }}>
+                  Add another node to connect with an edge.
+                </p>
+              )}
+            </form>
+          )}
 
-      <section aria-labelledby="add-node-heading">
-        <h2 id="add-node-heading" style={{ fontSize: '1rem' }}>
-          Add node
-        </h2>
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: 8 }}>
-            <label htmlFor="node-name" style={{ display: 'block' }}>
-              Name
-            </label>
-            <input
-              id="node-name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              autoComplete="off"
-            />
-          </div>
-          <div style={{ marginBottom: 8 }}>
-            <label htmlFor="node-team" style={{ display: 'block' }}>
-              Team
-            </label>
-            <input
-              id="node-team"
-              type="text"
-              value={team}
-              onChange={(e) => setTeam(e.target.value)}
-              autoComplete="off"
-              placeholder="e.g. Payments"
-            />
-          </div>
-          <button type="submit" disabled={saving || nameTrimmed === ''}>
-            {saving ? 'Saving…' : 'Create node'}
-          </button>
-        </form>
-      </section>
+          <section aria-labelledby="nodes-heading">
+            <h3 id="nodes-heading" style={{ fontSize: '0.95rem', marginBottom: 8 }}>
+              Nodes ({nodes.length})
+            </h3>
+            {loading && <p>Loading…</p>}
+            {!loading && nodes.length === 0 && <p>No nodes yet.</p>}
+            {!loading && nodes.length > 0 && (
+              <ul style={{ paddingLeft: '1rem', marginTop: 0 }}>
+                {nodes.map((n) => (
+                  <li key={n.id} style={{ marginBottom: 4 }}>
+                    {nodeLabel(n.id)}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </aside>
 
-      <section aria-labelledby="nodes-heading" style={{ marginTop: 24 }}>
-        <h2 id="nodes-heading" style={{ fontSize: '1rem' }}>
-          Nodes
-        </h2>
-        {loading && <p>Loading…</p>}
-        {!loading && nodes.length === 0 && (
-          <p>No nodes yet. Add one above.</p>
-        )}
-        {!loading && nodes.length > 0 && (
-          <ul style={{ paddingLeft: '1.25rem' }}>
-            {nodes.map((n) => (
-              <li key={n.id}>
-                <strong>{n.name}</strong>
-                {n.team?.trim() && (
-                  <span style={{ color: '#555' }}> — {n.team.trim()}</span>
+        <section style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          <header
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 14px',
+              borderBottom: '1px solid #e2e8f0',
+              background: '#fff',
+            }}
+          >
+            <h1 style={{ fontSize: '1.05rem', margin: 0 }}>OrgGraph</h1>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" onClick={() => setActiveComposer('node')}>
+                Add Node
+              </button>
+              <button type="button" onClick={() => setActiveComposer('edge')}>
+                Add Edge
+              </button>
+            </div>
+          </header>
+          <div style={{ flex: 1, minHeight: 0, padding: 12 }}>
+            {!loading && nodes.length === 0 && (
+              <p style={{ color: '#555', marginTop: 0 }}>Add nodes to see the graph.</p>
+            )}
+            {!loading && nodes.length > 0 && (
+              <GraphView
+                nodes={nodes}
+                edges={edges}
+                selectedNodeId={selectedNodeId}
+                onNodeClick={(nodeId) => setSelectedNodeId(nodeId)}
+                onPaneClick={() => setSelectedNodeId(null)}
+                height="100%"
+              />
+            )}
+          </div>
+        </section>
+
+        <aside
+          style={{
+            width: 300,
+            minWidth: 300,
+            borderLeft: '1px solid #e2e8f0',
+            padding: 12,
+            overflow: 'auto',
+            background: '#fff',
+          }}
+        >
+          <section aria-labelledby="inspect-heading">
+            <h2 id="inspect-heading" style={{ fontSize: '1rem', margin: '0 0 8px 0' }}>
+              Node details
+            </h2>
+            {!selectedNodeId && (
+              <p style={{ color: '#555', marginTop: 0 }}>Select a node to view details</p>
+            )}
+            {selectedNode && (
+              <>
+                <p style={{ marginBottom: 4 }}>
+                  <strong>Name:</strong> {selectedNode.name}
+                </p>
+                <p style={{ marginBottom: 4 }}>
+                  <strong>Type:</strong> {selectedNode.type}
+                </p>
+                <p style={{ marginBottom: 4 }}>
+                  <strong>Team:</strong> {selectedNode.team?.trim() || '—'}
+                </p>
+                <p style={{ marginBottom: 12 }}>
+                  <strong>ID:</strong>{' '}
+                  <span style={{ fontSize: '0.85em', color: '#555' }}>
+                    {selectedNode.id}
+                  </span>
+                </p>
+                <h3 style={{ fontSize: '0.95rem', marginBottom: 8 }}>Connections</h3>
+                {connectedEdges.length === 0 && <p>No connections.</p>}
+                {connectedEdges.length > 0 && (
+                  <ul style={{ paddingLeft: '1.1rem', marginTop: 0 }}>
+                    {connectedEdges.map((ed) => {
+                      const isSource = ed.from_id === selectedNode.id
+                      const otherId = isSource ? ed.to_id : ed.from_id
+                      return (
+                        <li key={ed.id} style={{ marginBottom: 8 }}>
+                          <div>
+                            {nodeLabel(ed.from_id)} → {nodeLabel(ed.to_id)} ({ed.type})
+                          </div>
+                          <div style={{ color: '#555', fontSize: '0.9rem' }}>
+                            {isSource ? `→ ${nodeLabel(otherId)}` : `${nodeLabel(otherId)} ←`}
+                          </div>
+                        </li>
+                      )
+                    })}
+                  </ul>
                 )}
-                <span style={{ color: '#888', fontSize: '0.85em' }}>
-                  {' '}
-                  ({n.id})
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section aria-labelledby="add-edge-heading" style={{ marginTop: 24 }}>
-        <h2 id="add-edge-heading" style={{ fontSize: '1rem' }}>
-          Add edge
-        </h2>
-        <form onSubmit={handleCreateEdge}>
-          <div style={{ marginBottom: 8 }}>
-            <label htmlFor="edge-from" style={{ display: 'block' }}>
-              From node
-            </label>
-            <select
-              id="edge-from"
-              value={edgeFromId}
-              onChange={(e) => {
-                const v = e.target.value
-                setEdgeFromId(v)
-                if (edgeToId === v) setEdgeToId('')
-              }}
-              required
-              disabled={loading || nodes.length === 0}
-            >
-              <option value="" disabled>
-                Select node…
-              </option>
-              {nodes.map((n) => (
-                <option key={n.id} value={n.id}>
-                  {nodeLabel(n.id)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div style={{ marginBottom: 8 }}>
-            <label htmlFor="edge-to" style={{ display: 'block' }}>
-              To node
-            </label>
-            <select
-              id="edge-to"
-              value={edgeToId}
-              onChange={(e) => setEdgeToId(e.target.value)}
-              required
-              disabled={
-                loading || nodes.length === 0 || toNodeOptions.length === 0
-              }
-            >
-              <option value="" disabled>
-                {edgeFromId
-                  ? 'Select node…'
-                  : 'Choose a “from” node first…'}
-              </option>
-              {toNodeOptions.map((n) => (
-                <option key={n.id} value={n.id}>
-                  {nodeLabel(n.id)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div style={{ marginBottom: 8 }}>
-            <label htmlFor="edge-type" style={{ display: 'block' }}>
-              Relationship type
-            </label>
-            <select
-              id="edge-type"
-              value={edgeType}
-              onChange={(e) => setEdgeType(e.target.value)}
-              disabled={loading || nodes.length === 0}
-            >
-              <option value="works_with">works_with</option>
-              <option value="reports_to">reports_to</option>
-              <option value="depends_on">depends_on</option>
-            </select>
-          </div>
-          <button type="submit" disabled={edgeSubmitDisabled}>
-            {edgeSaving ? 'Saving…' : 'Create edge'}
-          </button>
-        </form>
-        {!loading && nodes.length === 0 && (
-          <p style={{ color: '#555', fontSize: '0.9rem' }}>
-            Add at least one node to create edges.
-          </p>
-        )}
-        {!loading && nodes.length === 1 && (
-          <p style={{ color: '#555', fontSize: '0.9rem' }}>
-            Add another node to connect with an edge.
-          </p>
-        )}
-      </section>
-
-      <section aria-labelledby="edges-heading" style={{ marginTop: 24 }}>
-        <h2 id="edges-heading" style={{ fontSize: '1rem' }}>
-          Edges
-        </h2>
-        {!loading && edges.length === 0 && <p>No edges yet.</p>}
-        {!loading && edges.length > 0 && (
-          <ul style={{ paddingLeft: '1.25rem' }}>
-            {edges.map((ed) => (
-              <li key={ed.id}>
-                {nodeLabel(ed.from_id)} → {nodeLabel(ed.to_id)} ({ed.type})
-                <span style={{ color: '#888', fontSize: '0.85em' }}>
-                  {' '}
-                  ({ed.id})
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section aria-labelledby="graph-heading" style={{ marginTop: 24 }}>
-        <h2 id="graph-heading" style={{ fontSize: '1rem' }}>
-          Graph
-        </h2>
-        {!loading && nodes.length === 0 && (
-          <p style={{ color: '#555' }}>Add nodes to see the graph.</p>
-        )}
-        {!loading && nodes.length > 0 && (
-          <>
-            <GraphView
-              nodes={nodes}
-              edges={edges}
-              selectedNodeId={selectedNodeId}
-              onNodeClick={(nodeId) => setSelectedNodeId(nodeId)}
-              onPaneClick={() => setSelectedNodeId(null)}
-            />
-            <section
-              aria-labelledby="inspect-heading"
-              style={{ marginTop: 16 }}
-            >
-              <h2 id="inspect-heading" style={{ fontSize: '1rem' }}>
-                Node details
-              </h2>
-              {!selectedNodeId && (
-                <p style={{ color: '#555' }}>Select a node to view details</p>
-              )}
-              {selectedNode && (
-                <>
-                  <p style={{ marginBottom: 4 }}>
-                    <strong>Name:</strong> {selectedNode.name}
-                  </p>
-                  <p style={{ marginBottom: 4 }}>
-                    <strong>Type:</strong> {selectedNode.type}
-                  </p>
-                  <p style={{ marginBottom: 4 }}>
-                    <strong>Team:</strong> {selectedNode.team?.trim() || '—'}
-                  </p>
-                  <p style={{ marginBottom: 12 }}>
-                    <strong>ID:</strong>{' '}
-                    <span style={{ fontSize: '0.85em', color: '#555' }}>
-                      {selectedNode.id}
-                    </span>
-                  </p>
-                  <h3 style={{ fontSize: '0.95rem', marginBottom: 8 }}>
-                    Connections
-                  </h3>
-                  {connectedEdges.length === 0 && <p>No connections.</p>}
-                  {connectedEdges.length > 0 && (
-                    <ul style={{ paddingLeft: '1.25rem', marginTop: 0 }}>
-                      {connectedEdges.map((ed) => {
-                        const isSource = ed.from_id === selectedNode.id
-                        const otherId = isSource ? ed.to_id : ed.from_id
-                        return (
-                          <li key={ed.id} style={{ marginBottom: 8 }}>
-                            <div>
-                              {nodeLabel(ed.from_id)} → {nodeLabel(ed.to_id)} (
-                              {ed.type})
-                            </div>
-                            <div style={{ color: '#555', fontSize: '0.9rem' }}>
-                              {isSource
-                                ? `→ ${nodeLabel(otherId)}`
-                                : `${nodeLabel(otherId)} ←`}
-                            </div>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  )}
-                </>
-              )}
-            </section>
-          </>
-        )}
-      </section>
+              </>
+            )}
+          </section>
+        </aside>
+      </div>
     </main>
   )
 }

@@ -142,6 +142,7 @@ export interface GraphViewProps {
   selectedNodeId?: string | null
   onNodeClick?: (nodeId: string) => void
   onPaneClick?: () => void
+  height?: number | string
 }
 
 export function GraphView({
@@ -150,6 +151,7 @@ export function GraphView({
   selectedNodeId = null,
   onNodeClick,
   onPaneClick,
+  height = 420,
 }: GraphViewProps) {
   const flowNodes = useMemo(() => {
     const positions = layoutWithDagre(nodes, edges)
@@ -187,7 +189,7 @@ export function GraphView({
     <div
       style={{
         width: '100%',
-        height: 420,
+        height,
         borderRadius: 12,
         overflow: 'hidden',
         border: '1px solid #e2e8f0',
