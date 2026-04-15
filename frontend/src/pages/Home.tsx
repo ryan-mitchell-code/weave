@@ -1,7 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  createEdge,
-  createNode,
   deleteNode,
   fetchGraph,
   updateNode,
@@ -11,15 +9,13 @@ import {
 } from '../api/client'
 import { GraphView } from '../graph/GraphView'
 import { Button } from '../components/ui/button'
-import { Input } from '../components/ui/input'
+import { QuickInputBar } from '../components/home/QuickInputBar'
 import { DetailsPanel } from '../components/home/details/DetailsPanel'
-
-const EDGE_TYPE_OPTIONS = ['works_with', 'reports_to', 'depends_on'] as const
-
-function formatEdgeTypeLabel(type: string): string {
-  const withSpaces = type.replace(/_/g, ' ')
-  return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1)
-}
+import { EDGE_TYPE_OPTIONS } from './home/constants'
+import { formatEdgeTypeLabel, formatNodeLabel } from './home/labels'
+import { useDeleteNodeShortcut } from './home/useDeleteNodeShortcut'
+import { useHighlightFlash } from './home/useHighlightFlash'
+import { useQuickCommand } from './home/useQuickCommand'
 
 export default function Home() {
   const [nodes, setNodes] = useState<Node[]>([])
@@ -28,20 +24,26 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null)
-  const [quickInput, setQuickInput] = useState('')
-  const [quickSaving, setQuickSaving] = useState(false)
   const [edgeTypeSaving, setEdgeTypeSaving] = useState(false)
   const [nodeSaving, setNodeSaving] = useState(false)
   const [nodeNameDraft, setNodeNameDraft] = useState('')
   const [nodeTeamDraft, setNodeTeamDraft] = useState('')
-  const [recentNodeIds, setRecentNodeIds] = useState<string[]>([])
-  const [quickSuggestionsOpen, setQuickSuggestionsOpen] = useState(false)
-  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
   const [focusMode, setFocusMode] = useState(false)
-  const [highlightedNodeId, setHighlightedNodeId] = useState<string | null>(null)
-  const [highlightedEdgeId, setHighlightedEdgeId] = useState<string | null>(null)
-  const nodeHighlightTimerRef = useRef<number | null>(null)
-  const edgeHighlightTimerRef = useRef<number | null>(null)
+
+  const {
+    highlightedNodeId,
+    highlightedEdgeId,
+    flashNode: flashNodeHighlight,
+    flashEdge,
+    clearNodeHighlightIf,
+  } = useHighlightFlash()
+
+  const flashNode = useCallback(
+    (nodeId: string) => {
+      flashNodeHighlight(nodeId, setSelectedNodeId)
+    },
+    [flashNodeHighlight, setSelectedNodeId],
+  )
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -73,19 +75,13 @@ export default function Home() {
     }
   }, [edges, selectedEdgeId])
 
-  useEffect(() => {
-    return () => {
-      if (nodeHighlightTimerRef.current) window.clearTimeout(nodeHighlightTimerRef.current)
-      if (edgeHighlightTimerRef.current) window.clearTimeout(edgeHighlightTimerRef.current)
-    }
-  }, [])
-
   const selectedNode = selectedNodeId
     ? nodes.find((n) => n.id === selectedNodeId)
     : undefined
   const selectedEdge = selectedEdgeId
     ? edges.find((e) => e.id === selectedEdgeId)
     : undefined
+
   const edgeTypeOptions = useMemo(() => {
     const set = new Set<string>(EDGE_TYPE_OPTIONS)
     for (const e of edges) set.add(e.type)
@@ -105,224 +101,31 @@ export default function Home() {
     setNodeTeamDraft(selectedNode.team ?? '')
   }, [selectedNode])
 
-  function markRecentNode(nodeId: string) {
-    setRecentNodeIds((prev) => [nodeId, ...prev.filter((id) => id !== nodeId)].slice(0, 10))
-  }
-
-  function flashNode(nodeId: string) {
-    if (nodeHighlightTimerRef.current) window.clearTimeout(nodeHighlightTimerRef.current)
-    setHighlightedNodeId(nodeId)
-    setSelectedNodeId(nodeId)
-    nodeHighlightTimerRef.current = window.setTimeout(() => {
-      setHighlightedNodeId((current) => (current === nodeId ? null : current))
-    }, 1200)
-  }
-
-  function flashEdge(edgeId: string) {
-    if (edgeHighlightTimerRef.current) window.clearTimeout(edgeHighlightTimerRef.current)
-    setHighlightedEdgeId(edgeId)
-    edgeHighlightTimerRef.current = window.setTimeout(() => {
-      setHighlightedEdgeId((current) => (current === edgeId ? null : current))
-    }, 1200)
-  }
-
-  function navigateToNode(nodeId: string, inputValue?: string) {
-    setSelectedNodeId(nodeId)
-    setSelectedEdgeId(null)
-    markRecentNode(nodeId)
-    if (typeof inputValue === 'string') {
-      setQuickInput(inputValue)
-      // Programmatic value updates do not fire onChange; keep the list usable for Tab / further typing.
-      setQuickSuggestionsOpen(true)
-    } else {
-      setQuickSuggestionsOpen(false)
-    }
-  }
-
-  const rankSuggestedNodes = useCallback((list: Node[], query: string): Node[] => {
-    const q = query.trim().toLowerCase()
-    const recentRank = new Map(recentNodeIds.map((id, i) => [id, i]))
-    return [...list].sort((a, b) => {
-      const aRecent = recentRank.get(a.id) ?? Number.POSITIVE_INFINITY
-      const bRecent = recentRank.get(b.id) ?? Number.POSITIVE_INFINITY
-      if (aRecent !== bRecent) return aRecent - bRecent
-      const aName = a.name.trim().toLowerCase()
-      const bName = b.name.trim().toLowerCase()
-      const aStarts = q ? (aName.startsWith(q) ? 0 : 1) : 0
-      const bStarts = q ? (bName.startsWith(q) ? 0 : 1) : 0
-      if (aStarts !== bStarts) return aStarts - bStarts
-      return aName.localeCompare(bName)
-    })
-  }, [recentNodeIds])
-
-  const quickContext = useMemo(() => {
-    const raw = quickInput
-    const trimmed = raw.trim()
-    const arrowIdx = raw.indexOf('->')
-    if (arrowIdx >= 0) {
-      return {
-        mode: 'edge' as const,
-        delimiter: 'arrow' as const,
-        left: raw.slice(0, arrowIdx).trim(),
-        right: raw.slice(arrowIdx + 2).trim(),
-        trimmed,
-      }
-    }
-    const toMatch = raw.match(/^(.+?)\s+to\s*(.*)$/i)
-    if (toMatch) {
-      return {
-        mode: 'edge' as const,
-        delimiter: 'to' as const,
-        left: toMatch[1].trim(),
-        right: toMatch[2].trim(),
-        trimmed,
-      }
-    }
-    return {
-      mode: 'node' as const,
-      delimiter: null,
-      left: '',
-      right: '',
-      trimmed,
-    }
-  }, [quickInput])
-
-  const findNodeByName = useCallback((rawName: string): Node | undefined => {
-    const q = rawName.trim().toLowerCase()
-    if (!q) return undefined
-    return nodes.find((n) => n.name.trim().toLowerCase() === q)
-  }, [nodes])
-
-  const quickSuggestions = useMemo(() => {
-    if (!quickContext.trimmed) return []
-    if (quickContext.mode === 'edge') {
-      const fromNode = findNodeByName(quickContext.left)
-      const q = quickContext.right.toLowerCase()
-      const pool = fromNode
-        ? nodes.filter((n) => n.id !== fromNode.id)
-        : nodes
-      const filtered = q
-        ? pool.filter((n) => n.name.toLowerCase().includes(q))
-        : pool
-      return rankSuggestedNodes(filtered, q).slice(0, 8)
-    }
-    const q = quickContext.trimmed.toLowerCase()
-    const filtered = nodes.filter((n) => n.name.toLowerCase().includes(q))
-    return rankSuggestedNodes(filtered, q).slice(0, 8)
-  }, [nodes, quickContext, findNodeByName, rankSuggestedNodes])
-
-  const quickListboxId = 'quick-input-suggestions'
-
-  useEffect(() => {
-    if (!quickSuggestionsOpen || quickSuggestions.length === 0) {
-      setActiveSuggestionIndex(-1)
-      return
-    }
-    setActiveSuggestionIndex((current) => Math.min(current, quickSuggestions.length - 1))
-  }, [quickSuggestionsOpen, quickSuggestions.length])
-
-  function applyQuickSuggestion(nodeName: string) {
-    const n = findNodeByName(nodeName)
-    if (!n) return
-    setActiveSuggestionIndex(-1)
-    if (quickContext.mode === 'edge') {
-      const sep = quickContext.delimiter === 'to' ? ' to ' : ' -> '
-      const nextInput = `${quickContext.left}${sep}${nodeName.trim()}`
-      navigateToNode(n.id, nextInput)
-      return
-    }
-    navigateToNode(n.id, n.name)
-  }
-
-  async function handleQuickCreate() {
-    const raw = quickInput.trim()
-    if (!raw || quickSaving) return
-    setError(null)
-    setQuickSaving(true)
-    try {
-      const arrowIdx = raw.indexOf('->')
-      const toMatch = raw.match(/^(.+?)\s+to\s+(.+)$/i)
-      let left = ''
-      let right = ''
-      let edgeType = 'works_with'
-
-      if (arrowIdx >= 0) {
-        left = raw.slice(0, arrowIdx).trim()
-        const rightRaw = raw.slice(arrowIdx + 2).trim()
-        const colonMatch = rightRaw.match(/^(.+?)\s*:\s*([a-z_]+)$/i)
-        if (colonMatch) {
-          right = colonMatch[1].trim()
-          edgeType = colonMatch[2].trim().toLowerCase()
-        } else {
-          const parts = rightRaw.split(/\s+/).filter(Boolean)
-          const maybeType = (parts[parts.length - 1] ?? '').toLowerCase()
-          if (parts.length >= 2 && EDGE_TYPE_OPTIONS.includes(maybeType as (typeof EDGE_TYPE_OPTIONS)[number])) {
-            right = parts.slice(0, -1).join(' ')
-            edgeType = maybeType
-          } else {
-            right = rightRaw
-          }
-        }
-      } else if (toMatch) {
-        left = toMatch[1].trim()
-        right = toMatch[2].trim()
-      } else {
-        const tokens = raw.split(/\s+/).filter(Boolean)
-        if (tokens.length >= 2) {
-          const maybeFrom = findNodeByName(tokens[0])
-          const maybeTo = findNodeByName(tokens[1])
-          if (maybeFrom && maybeTo) {
-            left = tokens[0]
-            right = tokens[1]
-          }
-        }
-      }
-
-      if (left || right) {
-        if (!left || !right) {
-          setError('Use "alice -> bob" (or "alice to bob") format for edges.')
-          return
-        }
-        const fromNode = findNodeByName(left)
-        const toNode = findNodeByName(right)
-        if (!fromNode || !toNode) {
-          setError('Both nodes must already exist to create an edge.')
-          return
-        }
-        const newEdge = await createEdge({
-          from_id: fromNode.id,
-          to_id: toNode.id,
-          type: edgeType,
-        })
-        setEdges((prev) => [...prev, newEdge])
-        markRecentNode(fromNode.id)
-        markRecentNode(toNode.id)
-        flashEdge(newEdge.id)
-        setSelectedNodeId(null)
-        setSelectedEdgeId(newEdge.id)
-      } else {
-        const parts = raw.split(/\s+/).filter(Boolean)
-        const namePart = parts[0] ?? ''
-        const teamPart = parts.slice(1).join(' ')
-        if (!namePart) return
-        const newNode = await createNode({ name: namePart, team: teamPart || undefined })
-        setNodes((prev) => [...prev, newNode])
-        markRecentNode(newNode.id)
-        flashNode(newNode.id)
-      }
-      setQuickInput('')
-      setQuickSuggestionsOpen(false)
-      setActiveSuggestionIndex(-1)
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Quick create failed. Try again.',
-      )
-    } finally {
-      setQuickSaving(false)
-    }
-  }
+  const {
+    quickInput,
+    setQuickInput,
+    quickSaving,
+    quickSuggestionsOpen,
+    setQuickSuggestionsOpen,
+    activeSuggestionIndex,
+    setActiveSuggestionIndex,
+    quickContext,
+    quickSuggestions,
+    quickListboxId,
+    applyQuickSuggestion,
+    handleQuickCreate,
+    markRecentNode,
+  } = useQuickCommand({
+    nodes,
+    setNodes,
+    setEdges,
+    setError,
+    setSelectedNodeId,
+    setSelectedEdgeId,
+    flashNode,
+    flashEdge,
+    loading,
+  })
 
   async function handleEdgeTypeChange(nextType: string) {
     if (!selectedEdge || edgeTypeSaving) return
@@ -377,31 +180,15 @@ export default function Home() {
       setEdges((prev) => prev.filter((e) => e.from_id !== nodeId && e.to_id !== nodeId))
       setSelectedNodeId(null)
       setSelectedEdgeId(null)
-      setHighlightedNodeId((curr) => (curr === nodeId ? null : curr))
+      clearNodeHighlightIf(nodeId)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not delete node.')
     }
-  }, [])
+  }, [clearNodeHighlightIf])
 
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key !== 'Delete' || !selectedNodeId) return
-      const target = e.target as HTMLElement | null
-      const tag = target?.tagName?.toLowerCase()
-      if (tag === 'input' || tag === 'textarea' || tag === 'select') return
-      e.preventDefault()
-      void handleDeleteNode(selectedNodeId)
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [selectedNodeId, handleDeleteNode])
+  useDeleteNodeShortcut(selectedNodeId, handleDeleteNode)
 
-  function nodeLabel(id: string): string {
-    const n = nodes.find((x) => x.id === id)
-    if (!n) return id
-    const teamLabel = n.team?.trim()
-    return teamLabel ? `${n.name} (${teamLabel})` : n.name
-  }
+  const nodeLabel = useCallback((id: string) => formatNodeLabel(nodes, id), [nodes])
 
   return (
     <div className="flex h-screen font-sans">
@@ -417,114 +204,21 @@ export default function Home() {
         <section className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900 shadow-sm">
           <header className="flex items-center justify-between gap-3 border-b border-slate-800 bg-slate-900 px-5 py-4">
             <h1 className="whitespace-nowrap text-base font-semibold">Weave</h1>
-            <div className="relative min-w-0 flex-1">
-              <Input
-                aria-label="Quick add node or edge"
-                type="text"
-                value={quickInput}
-                role="combobox"
-                aria-expanded={quickSuggestionsOpen && quickSuggestions.length > 0}
-                aria-controls={quickListboxId}
-                aria-activedescendant={
-                  activeSuggestionIndex >= 0 && quickSuggestions[activeSuggestionIndex]
-                    ? `${quickListboxId}-${quickSuggestions[activeSuggestionIndex].id}`
-                    : undefined
-                }
-                onChange={(e) => {
-                  const v = e.target.value
-                  setQuickInput(v)
-                  setActiveSuggestionIndex(-1)
-                  if (v.trim() !== '') setQuickSuggestionsOpen(true)
-                }}
-                onFocus={() => {
-                  setQuickSuggestionsOpen(true)
-                }}
-                onBlur={() => {
-                  window.setTimeout(() => setQuickSuggestionsOpen(false), 120)
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'ArrowDown' && quickSuggestions.length > 0) {
-                    e.preventDefault()
-                    setQuickSuggestionsOpen(true)
-                    setActiveSuggestionIndex((idx) => (idx + 1) % quickSuggestions.length)
-                  } else if (e.key === 'ArrowUp' && quickSuggestions.length > 0) {
-                    e.preventDefault()
-                    setQuickSuggestionsOpen(true)
-                    setActiveSuggestionIndex((idx) =>
-                      idx <= 0 ? quickSuggestions.length - 1 : idx - 1,
-                    )
-                  } else if (
-                    e.key === 'Enter' &&
-                    quickSuggestionsOpen &&
-                    activeSuggestionIndex >= 0 &&
-                    quickSuggestions[activeSuggestionIndex]
-                  ) {
-                    e.preventDefault()
-                    applyQuickSuggestion(quickSuggestions[activeSuggestionIndex].name)
-                  } else if (
-                    e.key === 'Tab' &&
-                    !e.shiftKey &&
-                    quickSuggestionsOpen &&
-                    quickInput.trim() !== '' &&
-                    quickSuggestions.length > 0
-                  ) {
-                    const idx =
-                      activeSuggestionIndex >= 0 ? activeSuggestionIndex : 0
-                    const pick = quickSuggestions[idx]
-                    if (pick) {
-                      e.preventDefault()
-                      applyQuickSuggestion(pick.name)
-                    }
-                  } else if (e.key === 'Enter') {
-                    e.preventDefault()
-                    void handleQuickCreate()
-                  } else if (e.key === 'Escape') {
-                    setQuickSuggestionsOpen(false)
-                    setActiveSuggestionIndex(-1)
-                  }
-                }}
-                placeholder='Quick add: "alice payments" or "alice -> bob"'
-                disabled={quickSaving || loading}
-                className="w-full"
-              />
-              {quickSuggestionsOpen &&
-                quickInput.trim() !== '' &&
-                quickSuggestions.length > 0 && (
-                  <div
-                    id={quickListboxId}
-                    role="listbox"
-                    className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 shadow-lg"
-                  >
-                    {quickContext.mode === 'edge' && (
-                      <div className="border-b border-slate-700 px-2.5 py-1.5 text-xs text-slate-400">
-                        Suggested nodes
-                      </div>
-                    )}
-                    {quickSuggestions.map((n, idx) => (
-                      <button
-                        key={n.id}
-                        id={`${quickListboxId}-${n.id}`}
-                        role="option"
-                        aria-selected={idx === activeSuggestionIndex}
-                        type="button"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onMouseEnter={() => setActiveSuggestionIndex(idx)}
-                        onClick={() => applyQuickSuggestion(n.name)}
-                        className={`block w-full cursor-pointer border-none bg-transparent px-2.5 py-2 text-left hover:bg-slate-700 ${
-                          idx === activeSuggestionIndex ? 'bg-slate-700' : ''
-                        }`}
-                      >
-                        <div className="text-sm">{n.name}</div>
-                        {n.team?.trim() && (
-                          <div className="text-xs text-slate-400">
-                            {n.team.trim()}
-                          </div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-            </div>
+            <QuickInputBar
+              quickInput={quickInput}
+              setQuickInput={setQuickInput}
+              quickSaving={quickSaving}
+              loading={loading}
+              quickSuggestionsOpen={quickSuggestionsOpen}
+              setQuickSuggestionsOpen={setQuickSuggestionsOpen}
+              activeSuggestionIndex={activeSuggestionIndex}
+              setActiveSuggestionIndex={setActiveSuggestionIndex}
+              quickContext={quickContext}
+              quickSuggestions={quickSuggestions}
+              quickListboxId={quickListboxId}
+              applyQuickSuggestion={applyQuickSuggestion}
+              handleQuickCreate={handleQuickCreate}
+            />
             <div className="flex gap-2 whitespace-nowrap">
               <Button
                 type="button"
