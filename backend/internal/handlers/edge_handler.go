@@ -19,8 +19,14 @@ func CreateEdge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	e.FromID = strings.TrimSpace(e.FromID)
+	e.ToID = strings.TrimSpace(e.ToID)
 	if e.FromID == "" || e.ToID == "" {
 		writeError(w, http.StatusBadRequest, "from_id and to_id are required")
+		return
+	}
+	if e.FromID == e.ToID {
+		writeError(w, http.StatusBadRequest, "an edge cannot connect a node to itself")
 		return
 	}
 

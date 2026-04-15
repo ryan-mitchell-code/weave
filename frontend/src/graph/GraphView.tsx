@@ -103,6 +103,7 @@ function buildFlowEdges(edges: Edge[], selectedNodeId: string | null) {
       edge.to_id === selectedNodeId
     const edgeOpacity = selectedNodeId ? (connected ? 1 : 0.2) : 0.72
     const strokeWidth = selectedNodeId && connected ? 1.15 : 1.05
+    const labelOpacity = selectedNodeId ? (connected ? 1 : 0.35) : 1
 
     return {
       id: edge.id,
@@ -122,11 +123,14 @@ function buildFlowEdges(edges: Edge[], selectedNodeId: string | null) {
       },
       labelStyle: {
         fontSize: 11,
-        fill: '#334155',
+        fill: `rgba(51, 65, 85, ${labelOpacity})`,
         fontWeight: 500,
       },
       labelShowBg: true,
-      labelBgStyle: { fill: '#f8fafc', fillOpacity: 0.95 },
+      labelBgStyle: {
+        fill: '#f8fafc',
+        fillOpacity: selectedNodeId ? (connected ? 0.95 : 0.55) : 0.95,
+      },
       labelBgPadding: [4, 2] as [number, number],
     }
   })

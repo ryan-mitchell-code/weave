@@ -38,13 +38,13 @@ Represents entities in the organisation.
 Types:
 
 * Person
-* Team
 
 Fields:
 
 * id
 * name
 * type
+* team
 * notes
 * tags (future)
 
