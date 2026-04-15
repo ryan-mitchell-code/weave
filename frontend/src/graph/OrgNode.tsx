@@ -9,28 +9,28 @@ export type OrgNodeData = {
 
 const teamPalettes = [
   {
-    bg: '#f0fdf4',
-    border: '#86efac',
-    text: '#166534',
-    handle: '#4ade80',
+    bg: '#1e293b',
+    border: '#16a34a',
+    text: '#dcfce7',
+    handle: '#22c55e',
   },
   {
-    bg: '#f0f9ff',
-    border: '#7dd3fc',
-    text: '#1e3a8a',
+    bg: '#1e293b',
+    border: '#0284c7',
+    text: '#e0f2fe',
     handle: '#38bdf8',
   },
   {
-    bg: '#fefce8',
-    border: '#fde68a',
-    text: '#92400e',
-    handle: '#fbbf24',
+    bg: '#1e293b',
+    border: '#ca8a04',
+    text: '#fef3c7',
+    handle: '#f59e0b',
   },
   {
-    bg: '#faf5ff',
-    border: '#d8b4fe',
-    text: '#6b21a8',
-    handle: '#c084fc',
+    bg: '#1e293b',
+    border: '#9333ea',
+    text: '#f3e8ff',
+    handle: '#a855f7',
   },
 ] as const
 
@@ -50,7 +50,7 @@ function OrgNode({ data, selected }: NodeProps<OrgNodeData>) {
       style={{
         width: 180,
         boxSizing: 'border-box',
-        minHeight: 48,
+        height: 48,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -65,10 +65,10 @@ function OrgNode({ data, selected }: NodeProps<OrgNodeData>) {
         fontFamily: 'system-ui, -apple-system, sans-serif',
         lineHeight: 1.35,
         boxShadow: selected
-          ? '0 0 0 3px rgba(59, 130, 246, 0.22), 0 6px 20px rgba(15, 23, 42, 0.1)'
+          ? '0 0 0 3px rgba(59, 130, 246, 0.35), 0 6px 20px rgba(2, 6, 23, 0.45)'
           : highlighted
-            ? '0 0 0 3px rgba(250, 204, 21, 0.3), 0 8px 24px rgba(15, 23, 42, 0.12)'
-          : '0 2px 10px rgba(15, 23, 42, 0.06)',
+            ? '0 0 0 3px rgba(250, 204, 21, 0.4), 0 8px 24px rgba(2, 6, 23, 0.5)'
+          : '0 2px 10px rgba(2, 6, 23, 0.4)',
         transition: 'box-shadow 0.15s ease',
       }}
     >

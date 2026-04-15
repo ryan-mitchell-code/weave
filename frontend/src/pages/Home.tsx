@@ -10,6 +10,15 @@ import {
   type Node,
 } from '../api/client'
 import { GraphView } from '../graph/GraphView'
+import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select'
 
 const EDGE_TYPE_OPTIONS = ['works_with', 'reports_to', 'depends_on'] as const
 
@@ -377,46 +386,21 @@ export default function Home() {
   }
 
   return (
-    <main
-      style={{
-        height: '100dvh',
-        fontFamily: 'system-ui, sans-serif',
-        color: '#0f172a',
-        background: '#f8fafc',
-      }}
-    >
+    <div className="flex h-screen font-sans">
       {error && (
         <p
           role="alert"
-          style={{
-            color: 'crimson',
-            margin: 0,
-            padding: '8px 12px',
-            borderBottom: '1px solid #fecaca',
-            background: '#fff1f2',
-          }}
+          className="m-0 border-b border-rose-200 bg-rose-50 px-3 py-2 text-rose-700"
         >
           {error}
         </p>
       )}
-      <div style={{ display: 'flex', height: '100%', minHeight: 0 }}>
-        <section style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-          <header
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 12,
-              padding: '10px 14px',
-              borderBottom: '1px solid #e2e8f0',
-              background: '#fff',
-            }}
-          >
-            <h1 style={{ fontSize: '1.05rem', margin: 0, whiteSpace: 'nowrap' }}>
-              OrgGraph
-            </h1>
-            <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
-              <input
+      <div className="flex w-full gap-4 p-4">
+        <section className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900 shadow-sm">
+          <header className="flex items-center justify-between gap-3 border-b border-slate-800 bg-slate-900 px-5 py-4">
+            <h1 className="whitespace-nowrap text-base font-semibold">OrgGraph</h1>
+            <div className="relative min-w-0 flex-1">
+              <Input
                 aria-label="Quick add node or edge"
                 type="text"
                 value={quickInput}
@@ -435,41 +419,14 @@ export default function Home() {
                 }}
                 placeholder='Quick add: "alice payments" or "alice -> bob"'
                 disabled={quickSaving || loading}
-                style={{
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  padding: '7px 10px',
-                  borderRadius: 8,
-                  border: '1px solid #cbd5e1',
-                  fontSize: '0.9rem',
-                }}
+                className="w-full"
               />
               {quickSuggestionsOpen &&
                 quickInput.trim() !== '' &&
                 quickSuggestions.length > 0 && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      zIndex: 20,
-                      marginTop: 4,
-                      width: '100%',
-                      background: '#fff',
-                      border: '1px solid #cbd5e1',
-                      borderRadius: 8,
-                      boxShadow: '0 8px 20px rgba(15, 23, 42, 0.08)',
-                      maxHeight: 220,
-                      overflowY: 'auto',
-                    }}
-                  >
+                  <div className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 shadow-lg">
                     {quickContext.mode === 'edge' && (
-                      <div
-                        style={{
-                          padding: '6px 10px',
-                          fontSize: '0.78rem',
-                          color: '#64748b',
-                          borderBottom: '1px solid #e2e8f0',
-                        }}
-                      >
+                      <div className="border-b border-slate-700 px-2.5 py-1.5 text-xs text-slate-400">
                         Suggested nodes
                       </div>
                     )}
@@ -479,19 +436,11 @@ export default function Home() {
                         type="button"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => applyQuickSuggestion(n.name)}
-                        style={{
-                          display: 'block',
-                          width: '100%',
-                          textAlign: 'left',
-                          border: 'none',
-                          background: 'transparent',
-                          padding: '8px 10px',
-                          cursor: 'pointer',
-                        }}
+                        className="block w-full cursor-pointer border-none bg-transparent px-2.5 py-2 text-left hover:bg-slate-700"
                       >
-                        <div style={{ fontSize: '0.9rem' }}>{n.name}</div>
+                        <div className="text-sm">{n.name}</div>
                         {n.team?.trim() && (
-                          <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                          <div className="text-xs text-slate-400">
                             {n.team.trim()}
                           </div>
                         )}
@@ -500,22 +449,19 @@ export default function Home() {
                   </div>
                 )}
             </div>
-            <div style={{ display: 'flex', gap: 8, whiteSpace: 'nowrap' }}>
-              <button
+            <div className="flex gap-2 whitespace-nowrap">
+              <Button
                 type="button"
                 onClick={() => setFocusMode((v) => !v)}
-                style={{
-                  background: focusMode ? '#dbeafe' : undefined,
-                  borderColor: focusMode ? '#93c5fd' : undefined,
-                }}
+                variant={focusMode ? 'secondary' : 'outline'}
               >
                 Focus Mode
-              </button>
+              </Button>
             </div>
           </header>
-          <div style={{ flex: 1, minHeight: 0, padding: 12 }}>
+          <div className="flex-1 min-h-0 p-6">
             {!loading && nodes.length === 0 && (
-              <p style={{ color: '#555', marginTop: 0 }}>Add nodes to see the graph.</p>
+              <p className="mt-0 text-slate-400">Add nodes to see the graph.</p>
             )}
             {!loading && nodes.length > 0 && (
               <GraphView
@@ -545,145 +491,149 @@ export default function Home() {
           </div>
         </section>
 
-        <aside
-          style={{
-            width: 320,
-            minWidth: 320,
-            borderLeft: '1px solid #e2e8f0',
-            padding: 12,
-            overflow: 'auto',
-            background: '#fff',
-          }}
-        >
-          <section aria-labelledby="inspect-heading">
-            <h2 id="inspect-heading" style={{ fontSize: '1rem', margin: '0 0 8px 0' }}>
+        <div className="w-[300px] overflow-auto rounded-xl border-l border-slate-800 bg-slate-900 p-6 shadow-sm">
+          <div className="space-y-4">
+            <h2 id="inspect-heading" className="text-sm font-semibold text-slate-100">
               Details
             </h2>
             {!selectedNodeId && !selectedEdgeId && (
-              <p style={{ color: '#555', marginTop: 0 }}>
+              <p className="mt-0 text-sm text-slate-200">
                 Select a node or search to explore
               </p>
             )}
             {selectedEdge && (
-              <>
-                <p style={{ marginBottom: 4 }}>
-                  <strong>From:</strong> {nodeLabel(selectedEdge.from_id)}
+              <div className="space-y-3 rounded-lg border border-slate-700 bg-slate-800 p-3">
+                <div className="space-y-1">
+                  <p className="m-0 text-xs text-slate-400">From</p>
+                  <p className="m-0 text-sm text-slate-200">{nodeLabel(selectedEdge.from_id)}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="m-0 text-xs text-slate-400">To</p>
+                  <p className="m-0 text-sm text-slate-200">{nodeLabel(selectedEdge.to_id)}</p>
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="edge-type-edit" className="block text-xs text-slate-400">
+                    Type
+                  </label>
+                  <Select
+                    value={selectedEdge.type}
+                    onValueChange={(value) => {
+                      void handleEdgeTypeChange(value)
+                    }}
+                    disabled={edgeTypeSaving}
+                  >
+                    <SelectTrigger id="edge-type-edit" className="w-full focus-visible:ring-blue-500">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {edgeTypeOptions.map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {formatEdgeTypeLabel(opt)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <p className="m-0 text-xs text-slate-500">
+                  {edgeTypeSaving ? 'Updating...' : `Edge ID: ${selectedEdge.id}`}
                 </p>
-                <p style={{ marginBottom: 10 }}>
-                  <strong>To:</strong> {nodeLabel(selectedEdge.to_id)}
-                </p>
-                <label htmlFor="edge-type-edit" style={{ display: 'block', marginBottom: 4 }}>
-                  <strong>Type</strong>
-                </label>
-                <select
-                  id="edge-type-edit"
-                  value={selectedEdge.type}
-                  onChange={(e) => {
-                    void handleEdgeTypeChange(e.target.value)
-                  }}
-                  disabled={edgeTypeSaving}
-                  style={{ width: '100%', boxSizing: 'border-box', marginBottom: 12 }}
-                >
-                  {edgeTypeOptions.map((opt) => (
-                    <option key={opt} value={opt}>
-                      {formatEdgeTypeLabel(opt)}
-                    </option>
-                  ))}
-                </select>
-                <p style={{ marginBottom: 0, color: '#64748b', fontSize: '0.9rem' }}>
-                  {edgeTypeSaving ? 'Updating…' : `Edge ID: ${selectedEdge.id}`}
-                </p>
-              </>
+              </div>
             )}
             {selectedNode && (
-              <>
-                <label htmlFor="node-name-edit" style={{ display: 'block', marginBottom: 4 }}>
-                  <strong>Name</strong>
-                </label>
-                <input
-                  id="node-name-edit"
-                  value={nodeNameDraft}
-                  onChange={(e) => setNodeNameDraft(e.target.value)}
-                  onBlur={() => {
-                    void persistSelectedNode(nodeNameDraft, nodeTeamDraft)
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      ;(e.currentTarget as HTMLInputElement).blur()
-                    }
-                  }}
-                  disabled={nodeSaving}
-                  style={{ width: '100%', boxSizing: 'border-box', marginBottom: 10 }}
-                />
-                <p style={{ marginBottom: 4 }}>
-                  <strong>Type:</strong> {selectedNode.type}
-                </p>
-                <label htmlFor="node-team-edit" style={{ display: 'block', marginBottom: 4 }}>
-                  <strong>Team</strong>
-                </label>
-                <input
-                  id="node-team-edit"
-                  value={nodeTeamDraft}
-                  onChange={(e) => setNodeTeamDraft(e.target.value)}
-                  onBlur={() => {
-                    void persistSelectedNode(nodeNameDraft, nodeTeamDraft)
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      ;(e.currentTarget as HTMLInputElement).blur()
-                    }
-                  }}
-                  disabled={nodeSaving}
-                  style={{ width: '100%', boxSizing: 'border-box', marginBottom: 10 }}
-                />
-                <p style={{ marginBottom: 12 }}>
-                  <strong>ID:</strong>{' '}
-                  <span style={{ fontSize: '0.85em', color: '#555' }}>
-                    {selectedNode.id}
-                  </span>
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    void handleDeleteNode(selectedNode.id)
-                  }}
-                  style={{
-                    marginBottom: 12,
-                    background: '#fff1f2',
-                    borderColor: '#fecdd3',
-                    color: '#be123c',
-                  }}
-                >
-                  Delete node
-                </button>
-                <h3 style={{ fontSize: '0.95rem', marginBottom: 8 }}>Connections</h3>
-                {connectedEdges.length === 0 && <p>No connections.</p>}
-                {connectedEdges.length > 0 && (
-                  <ul style={{ paddingLeft: '1.1rem', marginTop: 0 }}>
-                    {connectedEdges.map((ed) => {
-                      const isSource = ed.from_id === selectedNode.id
-                      const otherId = isSource ? ed.to_id : ed.from_id
-                      return (
-                        <li key={ed.id} style={{ marginBottom: 8 }}>
-                          <div>
-                            {nodeLabel(ed.from_id)} → {nodeLabel(ed.to_id)} (
-                            {formatEdgeTypeLabel(ed.type)})
-                          </div>
-                          <div style={{ color: '#555', fontSize: '0.9rem' }}>
-                            {isSource ? `→ ${nodeLabel(otherId)}` : `${nodeLabel(otherId)} ←`}
-                          </div>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
-              </>
+              <div className="space-y-4">
+                <div className="space-y-3 rounded-lg border border-slate-700 bg-slate-800 p-3">
+                  <div className="space-y-1">
+                    <label htmlFor="node-name-edit" className="block text-xs text-slate-400">
+                      Name
+                    </label>
+                    <Input
+                      id="node-name-edit"
+                      value={nodeNameDraft}
+                      onChange={(e) => setNodeNameDraft(e.target.value)}
+                      onBlur={() => {
+                        void persistSelectedNode(nodeNameDraft, nodeTeamDraft)
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          ;(e.currentTarget as HTMLInputElement).blur()
+                        }
+                      }}
+                      disabled={nodeSaving}
+                      className="w-full focus-visible:ring-blue-500"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="m-0 text-xs text-slate-400">Type</p>
+                    <p className="m-0 text-sm text-slate-200">{selectedNode.type}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="node-team-edit" className="block text-xs text-slate-400">
+                      Team
+                    </label>
+                    <Input
+                      id="node-team-edit"
+                      value={nodeTeamDraft}
+                      onChange={(e) => setNodeTeamDraft(e.target.value)}
+                      onBlur={() => {
+                        void persistSelectedNode(nodeNameDraft, nodeTeamDraft)
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          ;(e.currentTarget as HTMLInputElement).blur()
+                        }
+                      }}
+                      disabled={nodeSaving}
+                      className="w-full focus-visible:ring-blue-500"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="m-0 text-xs text-slate-500">ID</p>
+                    <p className="m-0 text-xs text-slate-500">{selectedNode.id}</p>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-800 pt-4">
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      void handleDeleteNode(selectedNode.id)
+                    }}
+                    variant="destructive"
+                    className="w-full"
+                  >
+                    Delete node
+                  </Button>
+                </div>
+
+                <div className="space-y-2 rounded-lg border border-slate-700 bg-slate-800 p-3">
+                  <h3 className="text-sm font-semibold text-slate-100">Connections</h3>
+                  {connectedEdges.length === 0 && <p className="m-0 text-sm text-slate-200">No connections.</p>}
+                  {connectedEdges.length > 0 && (
+                    <ul className="m-0 list-disc space-y-2 pl-[1.1rem]">
+                      {connectedEdges.map((ed) => {
+                        const isSource = ed.from_id === selectedNode.id
+                        const otherId = isSource ? ed.to_id : ed.from_id
+                        return (
+                          <li key={ed.id} className="text-sm text-slate-200">
+                            <div>
+                              {nodeLabel(ed.from_id)} → {nodeLabel(ed.to_id)} ({formatEdgeTypeLabel(ed.type)})
+                            </div>
+                            <div className="text-xs text-slate-500">
+                              {isSource ? `→ ${nodeLabel(otherId)}` : `${nodeLabel(otherId)} ←`}
+                            </div>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  )}
+                </div>
+              </div>
             )}
-          </section>
-        </aside>
+          </div>
+        </div>
       </div>
-    </main>
+    </div>
   )
 }

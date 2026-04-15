@@ -124,12 +124,12 @@ function buildFlowEdges(edges: Edge[], selectedNodeId: string | null) {
       },
       labelStyle: {
         fontSize: 11,
-        fill: `rgba(51, 65, 85, ${labelOpacity})`,
+        fill: `rgba(226, 232, 240, ${labelOpacity})`,
         fontWeight: 500,
       },
       labelShowBg: true,
       labelBgStyle: {
-        fill: '#f8fafc',
+        fill: '#1e293b',
         fillOpacity: selectedNodeId ? (connected ? 0.95 : 0.35) : 0.85,
       },
       labelBgPadding: [4, 2] as [number, number],
@@ -282,8 +282,8 @@ export function GraphView({
         height,
         borderRadius: 12,
         overflow: 'hidden',
-        border: '1px solid #e2e8f0',
-        background: '#f8fafc',
+        border: '1px solid #1e293b',
+        background: '#1e293b',
       }}
     >
       <ReactFlow
@@ -308,7 +308,7 @@ export function GraphView({
           variant={BackgroundVariant.Dots}
           gap={14}
           size={1}
-          color="#cbd5e1"
+          color="#475569"
         />
         <Controls showInteractive={false} />
       </ReactFlow>
