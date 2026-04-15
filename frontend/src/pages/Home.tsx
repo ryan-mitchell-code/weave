@@ -30,6 +30,7 @@ export default function Home() {
   const [nodeNameDraft, setNodeNameDraft] = useState('')
   const [nodeTeamDraft, setNodeTeamDraft] = useState('')
   const [focusMode, setFocusMode] = useState(false)
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
 
   const {
     highlightedNodeId,
@@ -191,6 +192,8 @@ export default function Home() {
 
   useDeleteNodeShortcut(selectedNodeId, handleDeleteNode)
 
+  const endNodeHover = useCallback(() => setHoveredNodeId(null), [])
+
   const nodeLabel = useCallback((id: string) => formatNodeLabel(nodes, id), [nodes])
 
   return (
@@ -244,8 +247,10 @@ export default function Home() {
                 selectedEdgeId={selectedEdgeId}
                 highlightedNodeId={highlightedNodeId}
                 highlightedEdgeId={highlightedEdgeId}
+                hoveredNodeId={hoveredNodeId}
                 focusMode={focusMode}
                 onNodeClick={(nodeId) => {
+                  setHoveredNodeId(null)
                   setSelectedNodeId(nodeId)
                   setSelectedEdgeId(null)
                   markRecentNode(nodeId)
@@ -253,11 +258,15 @@ export default function Home() {
                 onEdgeClick={(edgeId) => {
                   setSelectedEdgeId(edgeId)
                   setSelectedNodeId(null)
+                  setHoveredNodeId(null)
                 }}
                 onPaneClick={() => {
                   setSelectedNodeId(null)
                   setSelectedEdgeId(null)
+                  setHoveredNodeId(null)
                 }}
+                onNodeHover={setHoveredNodeId}
+                onNodeHoverEnd={endNodeHover}
                 height="100%"
               />
             )}

@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+} from 'react'
 import dagre from 'dagre'
 import ReactFlow, {
   Background,
@@ -9,6 +16,7 @@ import ReactFlow, {
   useEdgesState,
   useNodesState,
 } from 'reactflow'
+import type { Node as RFNode } from 'reactflow'
 import type { Edge, Node } from '../api/client'
 import CustomEdge from './CustomEdge'
 import { GRAPH_THEME } from './graphTheme'
@@ -28,7 +36,8 @@ const NODE_HEIGHT = GRAPH_THEME.node.height
 const FOCUS_INACTIVE_NODE_OPACITY = 0.25
 const FOCUS_INACTIVE_EDGE_OPACITY = 0.15
 const FOCUS_ACTIVE_EDGE_STROKE = 2.75
-const OPACITY_TRANSITION = 'opacity 0.2s ease'
+const OPACITY_TRANSITION = 'opacity 0.15s ease'
+const HOVER_LEAVE_MS = 75
 
 function computeFocusSets(
   graphNodes: Node[],
@@ -174,7 +183,7 @@ function buildFlowEdges(
         strokeWidth,
         opacity: edgeOpacity,
         strokeLinecap: 'round',
-        transition: `${OPACITY_TRANSITION}, stroke-width 0.2s ease`,
+        transition: `${OPACITY_TRANSITION}, stroke-width 0.15s ease`,
         ...(showFlow
           ? {
               strokeDasharray: '6 6',
@@ -244,10 +253,14 @@ export interface GraphViewProps {
   selectedEdgeId?: string | null
   highlightedNodeId?: string | null
   highlightedEdgeId?: string | null
+  /** Preview focus while hovering (takes precedence over selection for dimming only). */
+  hoveredNodeId?: string | null
   focusMode?: boolean
   onNodeClick?: (nodeId: string) => void
   onEdgeClick?: (edgeId: string) => void
   onPaneClick?: () => void
+  onNodeHover?: (nodeId: string) => void
+  onNodeHoverEnd?: () => void
   height?: number | string
 }
 
@@ -258,12 +271,42 @@ export function GraphView({
   selectedEdgeId = null,
   highlightedNodeId = null,
   highlightedEdgeId = null,
+  hoveredNodeId = null,
   focusMode = false,
   onNodeClick,
   onEdgeClick,
   onPaneClick,
+  onNodeHover,
+  onNodeHoverEnd,
   height = 420,
 }: GraphViewProps) {
+  const hoverLeaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (hoverLeaveTimerRef.current) clearTimeout(hoverLeaveTimerRef.current)
+    }
+  }, [])
+
+  const handleNodeMouseEnter = useCallback(
+    (_: MouseEvent, node: RFNode) => {
+      if (hoverLeaveTimerRef.current) {
+        clearTimeout(hoverLeaveTimerRef.current)
+        hoverLeaveTimerRef.current = null
+      }
+      onNodeHover?.(node.id)
+    },
+    [onNodeHover],
+  )
+
+  const handleNodeMouseLeave = useCallback(() => {
+    if (hoverLeaveTimerRef.current) clearTimeout(hoverLeaveTimerRef.current)
+    hoverLeaveTimerRef.current = setTimeout(() => {
+      hoverLeaveTimerRef.current = null
+      onNodeHoverEnd?.()
+    }, HOVER_LEAVE_MS)
+  }, [onNodeHoverEnd])
+
   const [rfInstance, setRfInstance] = useState<{
     setCenter: (
       x: number,
@@ -288,11 +331,13 @@ export function GraphView({
     }
   }, [nodes, edges, focusMode, selectedNodeId])
 
+  const focusNodeId = hoveredNodeId ?? selectedNodeId
+
   const { activeNodeIds, activeEdgeIds } = useMemo(
-    () => computeFocusSets(visibleGraph.nodes, visibleGraph.edges, selectedNodeId),
-    [visibleGraph.nodes, visibleGraph.edges, selectedNodeId],
+    () => computeFocusSets(visibleGraph.nodes, visibleGraph.edges, focusNodeId),
+    [visibleGraph.nodes, visibleGraph.edges, focusNodeId],
   )
-  const hasNodeFocus = selectedNodeId != null
+  const hasNodeFocus = focusNodeId != null
 
   const flowNodes = useMemo(() => {
     const laidOut = layoutWithDagre(visibleGraph.nodes, visibleGraph.edges)
@@ -393,6 +438,8 @@ export function GraphView({
         onEdgesChange={onEdgesChange}
         onInit={(instance) => setRfInstance(instance)}
         onNodeClick={(_, node) => onNodeClick?.(node.id)}
+        onNodeMouseEnter={handleNodeMouseEnter}
+        onNodeMouseLeave={handleNodeMouseLeave}
         onEdgeClick={(_, edge) => onEdgeClick?.(edge.id)}
         onPaneClick={() => onPaneClick?.()}
         fitView
