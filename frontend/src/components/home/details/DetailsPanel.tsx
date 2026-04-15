@@ -3,8 +3,6 @@ import { EdgeDetailsSection } from './EdgeDetailsSection'
 import { NodeDetailsSection } from './NodeDetailsSection'
 
 type DetailsPanelProps = {
-  selectedNodeId: string | null
-  selectedEdgeId: string | null
   selectedNode: Node | undefined
   selectedEdge: Edge | undefined
   nodeNameDraft: string
@@ -23,8 +21,6 @@ type DetailsPanelProps = {
 }
 
 export function DetailsPanel({
-  selectedNodeId,
-  selectedEdgeId,
   selectedNode,
   selectedEdge,
   nodeNameDraft,
@@ -47,11 +43,6 @@ export function DetailsPanel({
         <h2 id="inspect-heading" className="text-sm font-semibold text-slate-100">
           Details
         </h2>
-        {!selectedNodeId && !selectedEdgeId && (
-          <p className="mt-0 text-sm text-slate-200">
-            Select a node or search to explore
-          </p>
-        )}
         {selectedEdge && (
           <EdgeDetailsSection
             selectedEdge={selectedEdge}

@@ -540,31 +540,31 @@ export default function Home() {
           </div>
         </section>
 
-        <DetailsPanel
-          selectedNodeId={selectedNodeId}
-          selectedEdgeId={selectedEdgeId}
-          selectedNode={selectedNode}
-          selectedEdge={selectedEdge}
-          nodeNameDraft={nodeNameDraft}
-          nodeTeamDraft={nodeTeamDraft}
-          nodeSaving={nodeSaving}
-          edgeTypeSaving={edgeTypeSaving}
-          connectedEdges={connectedEdges}
-          edgeTypeOptions={edgeTypeOptions}
-          nodeLabel={nodeLabel}
-          formatEdgeTypeLabel={formatEdgeTypeLabel}
-          onNodeNameChange={setNodeNameDraft}
-          onNodeTeamChange={setNodeTeamDraft}
-          onPersistNode={(name, team) => {
-            void persistSelectedNode(name, team)
-          }}
-          onDeleteNode={(nodeId) => {
-            void handleDeleteNode(nodeId)
-          }}
-          onEdgeTypeChange={(nextType) => {
-            void handleEdgeTypeChange(nextType)
-          }}
-        />
+        {(selectedNodeId != null || selectedEdgeId != null) && (
+          <DetailsPanel
+            selectedNode={selectedNode}
+            selectedEdge={selectedEdge}
+            nodeNameDraft={nodeNameDraft}
+            nodeTeamDraft={nodeTeamDraft}
+            nodeSaving={nodeSaving}
+            edgeTypeSaving={edgeTypeSaving}
+            connectedEdges={connectedEdges}
+            edgeTypeOptions={edgeTypeOptions}
+            nodeLabel={nodeLabel}
+            formatEdgeTypeLabel={formatEdgeTypeLabel}
+            onNodeNameChange={setNodeNameDraft}
+            onNodeTeamChange={setNodeTeamDraft}
+            onPersistNode={(name, team) => {
+              void persistSelectedNode(name, team)
+            }}
+            onDeleteNode={(nodeId) => {
+              void handleDeleteNode(nodeId)
+            }}
+            onEdgeTypeChange={(nextType) => {
+              void handleEdgeTypeChange(nextType)
+            }}
+          />
+        )}
       </div>
     </div>
   )
