@@ -12,13 +12,7 @@ import {
 import { GraphView } from '../graph/GraphView'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../components/ui/select'
+import { DetailsPanel } from '../components/home/details/DetailsPanel'
 
 const EDGE_TYPE_OPTIONS = ['works_with', 'reports_to', 'depends_on'] as const
 
@@ -491,148 +485,31 @@ export default function Home() {
           </div>
         </section>
 
-        <div className="w-[300px] overflow-auto rounded-xl border-l border-slate-800 bg-slate-900 p-6 shadow-sm">
-          <div className="space-y-4">
-            <h2 id="inspect-heading" className="text-sm font-semibold text-slate-100">
-              Details
-            </h2>
-            {!selectedNodeId && !selectedEdgeId && (
-              <p className="mt-0 text-sm text-slate-200">
-                Select a node or search to explore
-              </p>
-            )}
-            {selectedEdge && (
-              <div className="space-y-3 rounded-lg border border-slate-700 bg-slate-800 p-3">
-                <div className="space-y-1">
-                  <p className="m-0 text-xs text-slate-400">From</p>
-                  <p className="m-0 text-sm text-slate-200">{nodeLabel(selectedEdge.from_id)}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="m-0 text-xs text-slate-400">To</p>
-                  <p className="m-0 text-sm text-slate-200">{nodeLabel(selectedEdge.to_id)}</p>
-                </div>
-                <div className="space-y-1">
-                  <label htmlFor="edge-type-edit" className="block text-xs text-slate-400">
-                    Type
-                  </label>
-                  <Select
-                    value={selectedEdge.type}
-                    onValueChange={(value) => {
-                      void handleEdgeTypeChange(value)
-                    }}
-                    disabled={edgeTypeSaving}
-                  >
-                    <SelectTrigger id="edge-type-edit" className="w-full focus-visible:ring-blue-500">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {edgeTypeOptions.map((opt) => (
-                        <SelectItem key={opt} value={opt}>
-                          {formatEdgeTypeLabel(opt)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <p className="m-0 text-xs text-slate-500">
-                  {edgeTypeSaving ? 'Updating...' : `Edge ID: ${selectedEdge.id}`}
-                </p>
-              </div>
-            )}
-            {selectedNode && (
-              <div className="space-y-4">
-                <div className="space-y-3 rounded-lg border border-slate-700 bg-slate-800 p-3">
-                  <div className="space-y-1">
-                    <label htmlFor="node-name-edit" className="block text-xs text-slate-400">
-                      Name
-                    </label>
-                    <Input
-                      id="node-name-edit"
-                      value={nodeNameDraft}
-                      onChange={(e) => setNodeNameDraft(e.target.value)}
-                      onBlur={() => {
-                        void persistSelectedNode(nodeNameDraft, nodeTeamDraft)
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          ;(e.currentTarget as HTMLInputElement).blur()
-                        }
-                      }}
-                      disabled={nodeSaving}
-                      className="w-full focus-visible:ring-blue-500"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="m-0 text-xs text-slate-400">Type</p>
-                    <p className="m-0 text-sm text-slate-200">{selectedNode.type}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <label htmlFor="node-team-edit" className="block text-xs text-slate-400">
-                      Team
-                    </label>
-                    <Input
-                      id="node-team-edit"
-                      value={nodeTeamDraft}
-                      onChange={(e) => setNodeTeamDraft(e.target.value)}
-                      onBlur={() => {
-                        void persistSelectedNode(nodeNameDraft, nodeTeamDraft)
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          ;(e.currentTarget as HTMLInputElement).blur()
-                        }
-                      }}
-                      disabled={nodeSaving}
-                      className="w-full focus-visible:ring-blue-500"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="m-0 text-xs text-slate-500">ID</p>
-                    <p className="m-0 text-xs text-slate-500">{selectedNode.id}</p>
-                  </div>
-                </div>
-
-                <div className="border-t border-slate-800 pt-4">
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      void handleDeleteNode(selectedNode.id)
-                    }}
-                    variant="destructive"
-                    className="w-full"
-                  >
-                    Delete node
-                  </Button>
-                </div>
-
-                <div className="space-y-2 rounded-lg border border-slate-700 bg-slate-800 p-3">
-                  <h3 className="text-sm font-semibold text-slate-100">Connections</h3>
-                  {connectedEdges.length === 0 && <p className="m-0 text-sm text-slate-200">No connections.</p>}
-                  {connectedEdges.length > 0 && (
-                    <ul className="m-0 list-disc space-y-2 pl-[1.1rem]">
-                      {connectedEdges.map((ed) => {
-                        const isSource = ed.from_id === selectedNode.id
-                        const otherId = isSource ? ed.to_id : ed.from_id
-                        return (
-                          <li key={ed.id} className="text-sm text-slate-200">
-                            <div>
-                              {nodeLabel(ed.from_id)} → {nodeLabel(ed.to_id)} ({formatEdgeTypeLabel(ed.type)})
-                            </div>
-                            <div className="text-xs text-slate-500">
-                              {isSource ? `→ ${nodeLabel(otherId)}` : `${nodeLabel(otherId)} ←`}
-                            </div>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <DetailsPanel
+          selectedNodeId={selectedNodeId}
+          selectedEdgeId={selectedEdgeId}
+          selectedNode={selectedNode}
+          selectedEdge={selectedEdge}
+          nodeNameDraft={nodeNameDraft}
+          nodeTeamDraft={nodeTeamDraft}
+          nodeSaving={nodeSaving}
+          edgeTypeSaving={edgeTypeSaving}
+          connectedEdges={connectedEdges}
+          edgeTypeOptions={edgeTypeOptions}
+          nodeLabel={nodeLabel}
+          formatEdgeTypeLabel={formatEdgeTypeLabel}
+          onNodeNameChange={setNodeNameDraft}
+          onNodeTeamChange={setNodeTeamDraft}
+          onPersistNode={(name, team) => {
+            void persistSelectedNode(name, team)
+          }}
+          onDeleteNode={(nodeId) => {
+            void handleDeleteNode(nodeId)
+          }}
+          onEdgeTypeChange={(nextType) => {
+            void handleEdgeTypeChange(nextType)
+          }}
+        />
       </div>
     </div>
   )
