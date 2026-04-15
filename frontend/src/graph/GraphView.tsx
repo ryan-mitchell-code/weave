@@ -13,6 +13,8 @@ import type { Edge, Node } from '../api/client'
 import CustomEdge from './CustomEdge'
 import { GRAPH_THEME } from './graphTheme'
 import PersonNode from './PersonNode'
+import { formatDisplayName } from '../lib/displayFormat'
+import { getTeamDisplay } from './team'
 
 import 'reactflow/dist/style.css'
 
@@ -227,8 +229,8 @@ export function GraphView({
       id: node.id,
       type: 'person',
       data: {
-        name: node.name,
-        team: node.team,
+        name: formatDisplayName(node.name),
+        team: getTeamDisplay(node),
         highlighted: node.id === highlightedNodeId,
       },
       position: laidOut.get(node.id) ?? { x: 0, y: 0 },

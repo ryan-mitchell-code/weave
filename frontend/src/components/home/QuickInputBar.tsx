@@ -1,4 +1,6 @@
 import type { Node } from '../../api/client'
+import { getTeamDisplay } from '../../graph/team'
+import { formatDisplayName } from '../../lib/displayFormat'
 import { Input } from '../ui/input'
 import type { QuickContext } from '../../pages/home/quickInputLogic'
 
@@ -130,9 +132,11 @@ export function QuickInputBar({
                   idx === activeSuggestionIndex ? 'bg-slate-700' : ''
                 }`}
               >
-                <div className="text-sm">{n.name}</div>
+                <div className="text-sm">{formatDisplayName(n.name)}</div>
                 {n.team?.trim() && (
-                  <div className="text-xs text-slate-400">{n.team.trim()}</div>
+                  <div className="text-xs text-slate-400">
+                    {getTeamDisplay({ team: n.team })}
+                  </div>
                 )}
               </button>
             ))}

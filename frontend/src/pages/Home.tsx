@@ -11,6 +11,7 @@ import { GraphView } from '../graph/GraphView'
 import { Button } from '../components/ui/button'
 import { QuickInputBar } from '../components/home/QuickInputBar'
 import { DetailsPanel } from '../components/home/details/DetailsPanel'
+import { formatDisplayName } from '../lib/displayFormat'
 import { EDGE_TYPE_OPTIONS } from './home/constants'
 import { formatEdgeTypeLabel, formatNodeLabel } from './home/labels'
 import { useDeleteNodeShortcut } from './home/useDeleteNodeShortcut'
@@ -97,8 +98,10 @@ export default function Home() {
 
   useEffect(() => {
     if (!selectedNode) return
-    setNodeNameDraft(selectedNode.name)
-    setNodeTeamDraft(selectedNode.team ?? '')
+    setNodeNameDraft(formatDisplayName(selectedNode.name))
+    setNodeTeamDraft(
+      selectedNode.team?.trim() ? formatDisplayName(selectedNode.team.trim()) : '',
+    )
   }, [selectedNode])
 
   const {

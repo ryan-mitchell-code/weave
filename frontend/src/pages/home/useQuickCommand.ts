@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import { createEdge, createNode, type Edge, type Node } from '../../api/client'
+import { formatDisplayName } from '../../lib/displayFormat'
 import { EDGE_TYPE_OPTIONS } from './constants'
 import {
   buildQuickSuggestions,
@@ -80,11 +81,11 @@ export function useQuickCommand({
       setActiveSuggestionIndex(-1)
       if (quickContext.mode === 'edge') {
         const sep = quickContext.delimiter === 'to' ? ' to ' : ' -> '
-        const nextInput = `${quickContext.left}${sep}${nodeName.trim()}`
+        const nextInput = `${quickContext.left}${sep}${formatDisplayName(nodeName.trim())}`
         navigateToNode(n.id, nextInput)
         return
       }
-      navigateToNode(n.id, n.name)
+      navigateToNode(n.id, formatDisplayName(n.name))
     },
     [nodes, navigateToNode, quickContext],
   )
