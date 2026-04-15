@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Subtle directed flow on focused / highlighted graph edges (stroke on SVG path). */
+@keyframes flow {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -12;
+  }
+}
+
 @layer base {
   html,
   body,

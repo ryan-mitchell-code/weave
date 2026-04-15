@@ -131,6 +131,7 @@ function buildFlowEdges(
   edges: Edge[],
   hasNodeFocus: boolean,
   activeEdgeIds: Set<string>,
+  highlightedEdgeId: string | null,
 ) {
   const pairKey = (from: string, to: string) => `${from}-${to}`
   const counts = new Map<string, number>()
@@ -157,6 +158,10 @@ function buildFlowEdges(
       ? (isEdgeActive ? 1 : GRAPH_THEME.edge.labelDimmedOpacity * 0.75)
       : GRAPH_THEME.edge.labelDefaultOpacity
 
+    const showFlow =
+      (hasNodeFocus && isEdgeActive) ||
+      (highlightedEdgeId != null && edge.id === highlightedEdgeId)
+
     return {
       id: edge.id,
       source: edge.from_id,
@@ -168,7 +173,15 @@ function buildFlowEdges(
         stroke,
         strokeWidth,
         opacity: edgeOpacity,
+        strokeLinecap: 'round',
         transition: `${OPACITY_TRANSITION}, stroke-width 0.2s ease`,
+        ...(showFlow
+          ? {
+              strokeDasharray: '6 6',
+              animation: 'flow 1.2s linear infinite',
+              filter: `drop-shadow(0 0 2px ${stroke}66)`,
+            }
+          : {}),
       },
       zIndex: edgeIndex,
       markerEnd: {
@@ -201,11 +214,17 @@ function buildFlowEdgesWithHighlight(
   activeEdgeIds: Set<string>,
   highlightedEdgeId: string | null,
 ) {
-  return buildFlowEdges(edges, hasNodeFocus, activeEdgeIds).map((edge) => {
+  return buildFlowEdges(edges, hasNodeFocus, activeEdgeIds, highlightedEdgeId).map((edge) => {
     if (!highlightedEdgeId || edge.id !== highlightedEdgeId) return edge
     const style =
-      (edge.style as { strokeWidth?: number; opacity?: number; stroke?: string } | undefined) ??
-      {}
+      (edge.style as {
+        strokeWidth?: number
+        opacity?: number
+        stroke?: string
+        strokeDasharray?: string
+        animation?: string
+        filter?: string
+      } | undefined) ?? {}
     return {
       ...edge,
       style: {
@@ -213,7 +232,6 @@ function buildFlowEdgesWithHighlight(
         opacity: 1,
         strokeWidth: Math.max(Number(style.strokeWidth ?? 1), GRAPH_THEME.edge.highlightedStrokeWidth),
       },
-      animated: true,
       zIndex: 9999,
     }
   })
