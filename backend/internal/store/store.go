@@ -10,6 +10,7 @@ import (
 )
 
 var ErrDuplicateEdge = errors.New("duplicate edge")
+var ErrEdgeNotFound = errors.New("edge not found")
 
 var (
 	mu sync.RWMutex
@@ -36,6 +37,34 @@ func AddEdge(e models.Edge) error {
 	}
 	Edges = append(Edges, e)
 	return nil
+}
+
+func UpdateEdgeType(id, edgeType string) (models.Edge, error) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	for i := range Edges {
+		if Edges[i].ID != id {
+			continue
+		}
+
+		updated := Edges[i]
+		updated.Type = edgeType
+		for j := range Edges {
+			if i == j {
+				continue
+			}
+			x := Edges[j]
+			if x.FromID == updated.FromID && x.ToID == updated.ToID && x.Type == updated.Type {
+				return models.Edge{}, ErrDuplicateEdge
+			}
+		}
+
+		Edges[i] = updated
+		return updated, nil
+	}
+
+	return models.Edge{}, ErrEdgeNotFound
 }
 
 func NodeExists(id string) bool {

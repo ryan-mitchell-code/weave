@@ -61,7 +61,7 @@ export async function createNode(input: CreateNodeInput): Promise<Node> {
 export interface CreateEdgeInput {
   from_id: string
   to_id: string
-  type: string
+  type?: string
 }
 
 export async function createEdge(input: CreateEdgeInput): Promise<Edge> {
@@ -71,8 +71,22 @@ export async function createEdge(input: CreateEdgeInput): Promise<Edge> {
     body: JSON.stringify({
       from_id: input.from_id,
       to_id: input.to_id,
-      type: input.type,
+      type: input.type ?? 'works_with',
     }),
+  })
+  return parseJson<Edge>(res)
+}
+
+export interface UpdateEdgeTypeInput {
+  id: string
+  type: string
+}
+
+export async function updateEdgeType(input: UpdateEdgeTypeInput): Promise<Edge> {
+  const res = await fetch(`${baseUrl}/edges`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: input.id, type: input.type }),
   })
   return parseJson<Edge>(res)
 }

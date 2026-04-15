@@ -4,32 +4,33 @@ import { Handle, Position, type NodeProps } from 'reactflow'
 export type OrgNodeData = {
   label: string
   team: string
+  highlighted?: boolean
 }
 
 const teamPalettes = [
   {
-    bg: '#ecfdf5',
-    border: '#6ee7b7',
-    text: '#065f46',
-    handle: '#34d399',
+    bg: '#f0fdf4',
+    border: '#86efac',
+    text: '#166534',
+    handle: '#4ade80',
   },
   {
-    bg: '#eff6ff',
-    border: '#93c5fd',
-    text: '#1e40af',
-    handle: '#60a5fa',
+    bg: '#f0f9ff',
+    border: '#7dd3fc',
+    text: '#1e3a8a',
+    handle: '#38bdf8',
   },
   {
     bg: '#fefce8',
-    border: '#fde047',
-    text: '#854d0e',
-    handle: '#facc15',
+    border: '#fde68a',
+    text: '#92400e',
+    handle: '#fbbf24',
   },
   {
-    bg: '#fdf4ff',
-    border: '#f0abfc',
-    text: '#86198f',
-    handle: '#e879f9',
+    bg: '#faf5ff',
+    border: '#d8b4fe',
+    text: '#6b21a8',
+    handle: '#c084fc',
   },
 ] as const
 
@@ -43,6 +44,7 @@ function paletteForTeam(team: string) {
 
 function OrgNode({ data, selected }: NodeProps<OrgNodeData>) {
   const p = paletteForTeam(data.team)
+  const highlighted = Boolean(data.highlighted)
   return (
     <div
       style={{
@@ -64,6 +66,8 @@ function OrgNode({ data, selected }: NodeProps<OrgNodeData>) {
         lineHeight: 1.35,
         boxShadow: selected
           ? '0 0 0 3px rgba(59, 130, 246, 0.22), 0 6px 20px rgba(15, 23, 42, 0.1)'
+          : highlighted
+            ? '0 0 0 3px rgba(250, 204, 21, 0.3), 0 8px 24px rgba(15, 23, 42, 0.12)'
           : '0 2px 10px rgba(15, 23, 42, 0.06)',
         transition: 'box-shadow 0.15s ease',
       }}

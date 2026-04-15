@@ -32,8 +32,7 @@ func CreateEdge(w http.ResponseWriter, r *http.Request) {
 
 	e.Type = strings.TrimSpace(e.Type)
 	if e.Type == "" {
-		writeError(w, http.StatusBadRequest, "type is required")
-		return
+		e.Type = "works_with"
 	}
 
 	if !store.NodeExists(e.FromID) || !store.NodeExists(e.ToID) {
@@ -56,4 +55,40 @@ func CreateEdge(w http.ResponseWriter, r *http.Request) {
 
 func GetEdges(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, store.SnapshotEdges())
+}
+
+type updateEdgeTypeRequest struct {
+	ID   string `json:"id"`
+	Type string `json:"type"`
+}
+
+func UpdateEdgeType(w http.ResponseWriter, r *http.Request) {
+	var req updateEdgeTypeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	req.ID = strings.TrimSpace(req.ID)
+	req.Type = strings.TrimSpace(req.Type)
+	if req.ID == "" || req.Type == "" {
+		writeError(w, http.StatusBadRequest, "id and type are required")
+		return
+	}
+
+	updated, err := store.UpdateEdgeType(req.ID, req.Type)
+	if err != nil {
+		if errors.Is(err, store.ErrEdgeNotFound) {
+			writeError(w, http.StatusNotFound, "edge not found")
+			return
+		}
+		if errors.Is(err, store.ErrDuplicateEdge) {
+			writeError(w, http.StatusBadRequest, "duplicate edge for the same from_id, to_id, and type")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, updated)
 }

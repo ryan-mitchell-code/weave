@@ -33,6 +33,8 @@ func main() {
 			handlers.GetEdges(w, r)
 		case http.MethodPost:
 			handlers.CreateEdge(w, r)
+		case http.MethodPatch:
+			handlers.UpdateEdgeType(w, r)
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}

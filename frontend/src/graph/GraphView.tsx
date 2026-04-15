@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import dagre from 'dagre'
 import ReactFlow, {
   Background,
@@ -23,7 +23,8 @@ const NODE_WIDTH = 180
 const NODE_HEIGHT = 48
 
 function formatKindLabel(kind: string): string {
-  return kind.replace(/_/g, ' ')
+  const spaced = kind.replace(/_/g, ' ')
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
 }
 
 function layoutWithDagre(
@@ -101,9 +102,9 @@ function buildFlowEdges(edges: Edge[], selectedNodeId: string | null) {
       !selectedNodeId ||
       edge.from_id === selectedNodeId ||
       edge.to_id === selectedNodeId
-    const edgeOpacity = selectedNodeId ? (connected ? 1 : 0.2) : 0.72
-    const strokeWidth = selectedNodeId && connected ? 1.15 : 1.05
-    const labelOpacity = selectedNodeId ? (connected ? 1 : 0.35) : 1
+    const edgeOpacity = selectedNodeId ? (connected ? 1 : 0.05) : 0.42
+    const strokeWidth = selectedNodeId && connected ? 2 : 1
+    const labelOpacity = selectedNodeId ? (connected ? 1 : 0.2) : 0.88
 
     return {
       id: edge.id,
@@ -129,9 +130,32 @@ function buildFlowEdges(edges: Edge[], selectedNodeId: string | null) {
       labelShowBg: true,
       labelBgStyle: {
         fill: '#f8fafc',
-        fillOpacity: selectedNodeId ? (connected ? 0.95 : 0.55) : 0.95,
+        fillOpacity: selectedNodeId ? (connected ? 0.95 : 0.35) : 0.85,
       },
       labelBgPadding: [4, 2] as [number, number],
+    }
+  })
+}
+
+function buildFlowEdgesWithHighlight(
+  edges: Edge[],
+  selectedNodeId: string | null,
+  highlightedEdgeId: string | null,
+) {
+  return buildFlowEdges(edges, selectedNodeId).map((edge) => {
+    if (!highlightedEdgeId || edge.id !== highlightedEdgeId) return edge
+    const style =
+      (edge.style as { strokeWidth?: number; opacity?: number; stroke?: string } | undefined) ??
+      {}
+    return {
+      ...edge,
+      style: {
+        ...style,
+        opacity: 1,
+        strokeWidth: Math.max(Number(style.strokeWidth ?? 1), 2.8),
+      },
+      animated: true,
+      zIndex: 9999,
     }
   })
 }
@@ -140,7 +164,12 @@ export interface GraphViewProps {
   nodes: Node[]
   edges: Edge[]
   selectedNodeId?: string | null
+  selectedEdgeId?: string | null
+  highlightedNodeId?: string | null
+  highlightedEdgeId?: string | null
+  focusMode?: boolean
   onNodeClick?: (nodeId: string) => void
+  onEdgeClick?: (edgeId: string) => void
   onPaneClick?: () => void
   height?: number | string
 }
@@ -149,29 +178,94 @@ export function GraphView({
   nodes,
   edges,
   selectedNodeId = null,
+  selectedEdgeId = null,
+  highlightedNodeId = null,
+  highlightedEdgeId = null,
+  focusMode = false,
   onNodeClick,
+  onEdgeClick,
   onPaneClick,
   height = 420,
 }: GraphViewProps) {
+  const [rfInstance, setRfInstance] = useState<{
+    setCenter: (
+      x: number,
+      y: number,
+      options?: { zoom?: number; duration?: number },
+    ) => void
+  } | null>(null)
+  const [positionCache] = useState<Map<string, { x: number; y: number }>>(
+    () => new Map(),
+  )
+
+  const visibleGraph = useMemo(() => {
+    if (!focusMode || !selectedNodeId) return { nodes, edges }
+    const relatedEdges = edges.filter(
+      (e) => e.from_id === selectedNodeId || e.to_id === selectedNodeId,
+    )
+    const visibleNodeIds = new Set<string>([selectedNodeId])
+    for (const e of relatedEdges) {
+      visibleNodeIds.add(e.from_id)
+      visibleNodeIds.add(e.to_id)
+    }
+    return {
+      nodes: nodes.filter((n) => visibleNodeIds.has(n.id)),
+      edges: relatedEdges,
+    }
+  }, [nodes, edges, focusMode, selectedNodeId])
+
   const flowNodes = useMemo(() => {
-    const positions = layoutWithDagre(nodes, edges)
-    return nodes.map((node) => ({
+    const laidOut = layoutWithDagre(visibleGraph.nodes, visibleGraph.edges)
+    const next = new Map<string, { x: number; y: number }>(positionCache)
+    const existingNodeIds = new Set(nodes.map((n) => n.id))
+
+    for (const node of visibleGraph.nodes) {
+      if (next.has(node.id)) continue
+      next.set(node.id, laidOut.get(node.id) ?? { x: 0, y: 0 })
+    }
+    for (const id of [...next.keys()]) {
+      if (!existingNodeIds.has(id)) next.delete(id)
+    }
+    positionCache.clear()
+    for (const [id, pos] of next.entries()) positionCache.set(id, pos)
+
+    return visibleGraph.nodes.map((node) => ({
       id: node.id,
       type: 'org',
       data: {
         label: node.team?.trim() ? `${node.name} (${node.team.trim()})` : node.name,
         team: node.team?.trim() ?? '',
+        highlighted: node.id === highlightedNodeId,
       },
-      position: positions.get(node.id) ?? { x: 0, y: 0 },
+      position: next.get(node.id) ?? { x: 0, y: 0 },
       selected: node.id === selectedNodeId,
       sourcePosition: Position.Bottom,
       targetPosition: Position.Top,
     }))
-  }, [nodes, edges, selectedNodeId])
+  }, [visibleGraph, selectedNodeId, highlightedNodeId, nodes, positionCache])
 
   const flowEdges = useMemo(
-    () => buildFlowEdges(edges, selectedNodeId),
-    [edges, selectedNodeId],
+    () =>
+      buildFlowEdgesWithHighlight(
+        visibleGraph.edges,
+        selectedNodeId,
+        highlightedEdgeId,
+      ).map((edge) => {
+        if (edge.id !== selectedEdgeId) return edge
+        const style =
+          (edge.style as { strokeWidth?: number; opacity?: number; stroke?: string } | undefined) ??
+          {}
+        return {
+          ...edge,
+          style: {
+            ...style,
+            opacity: 1,
+            strokeWidth: Math.max(Number(style.strokeWidth ?? 1), 2.4),
+          },
+          zIndex: 9998,
+        }
+      }),
+    [visibleGraph.edges, selectedNodeId, highlightedEdgeId, selectedEdgeId],
   )
 
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState(flowNodes)
@@ -184,6 +278,17 @@ export function GraphView({
   useEffect(() => {
     setRfEdges(flowEdges)
   }, [flowEdges, setRfEdges])
+
+  useEffect(() => {
+    if (!rfInstance || !selectedNodeId) return
+    const target = rfNodes.find((n) => n.id === selectedNodeId)
+    if (!target) return
+    rfInstance.setCenter(
+      target.position.x + NODE_WIDTH / 2,
+      target.position.y + NODE_HEIGHT / 2,
+      { zoom: 1.15, duration: 320 },
+    )
+  }, [rfInstance, selectedNodeId, rfNodes])
 
   return (
     <div
@@ -203,7 +308,9 @@ export function GraphView({
         edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onInit={(instance) => setRfInstance(instance)}
         onNodeClick={(_, node) => onNodeClick?.(node.id)}
+        onEdgeClick={(_, edge) => onEdgeClick?.(edge.id)}
         onPaneClick={() => onPaneClick?.()}
         fitView
         fitViewOptions={{ padding: 0.15 }}
