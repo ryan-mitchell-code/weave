@@ -405,7 +405,7 @@ export default function Home() {
       <div className="flex w-full gap-4 p-4">
         <section className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900 shadow-sm">
           <header className="flex items-center justify-between gap-3 border-b border-slate-800 bg-slate-900 px-5 py-4">
-            <h1 className="whitespace-nowrap text-base font-semibold">OrgGraph</h1>
+            <h1 className="whitespace-nowrap text-base font-semibold">Weave</h1>
             <div className="relative min-w-0 flex-1">
               <Input
                 aria-label="Quick add node or edge"
