@@ -88,6 +88,7 @@ weave/
 ├── PRD.md                 # Product requirements & status
 ├── tasks.md               # Historical task checklist (may lag PRD)
 ├── README.md              # This file
+├── LICENSE                # MIT
 ├── backend/
 │   ├── cmd/api/           # HTTP server entrypoint
 │   └── internal/          # handlers, models, in-memory store
@@ -110,4 +111,4 @@ weave/
 
 ## License
 
-Unspecified in-repo; add a `LICENSE` file if you plan to distribute the project.
+This project is licensed under the **MIT License** — see [LICENSE](LICENSE).
