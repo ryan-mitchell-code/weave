@@ -1,7 +1,8 @@
 export const GRAPH_THEME = {
   node: {
-    width: 180,
-    height: 48,
+    /** Outer box for PersonNode (dagre + handle positions). */
+    width: 220,
+    height: 56,
     baseBackground: '#1e293b',
     fontSize: 13,
     fontWeight: 500,

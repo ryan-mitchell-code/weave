@@ -12,14 +12,14 @@ import ReactFlow, {
 import type { Edge, Node } from '../api/client'
 import CustomEdge from './CustomEdge'
 import { GRAPH_THEME } from './graphTheme'
-import OrgNode from './OrgNode'
+import PersonNode from './PersonNode'
 
 import 'reactflow/dist/style.css'
 
 const edgeTypes = { custom: CustomEdge }
-const nodeTypes = { org: OrgNode }
+const nodeTypes = { person: PersonNode }
 
-/** Match OrgNode outer dimensions for Dagre. */
+/** Match PersonNode outer dimensions for Dagre. */
 const NODE_WIDTH = GRAPH_THEME.node.width
 const NODE_HEIGHT = GRAPH_THEME.node.height
 
@@ -225,10 +225,10 @@ export function GraphView({
 
     return visibleGraph.nodes.map((node) => ({
       id: node.id,
-      type: 'org',
+      type: 'person',
       data: {
-        label: node.team?.trim() ? `${node.name} (${node.team.trim()})` : node.name,
-        team: node.team?.trim() ?? '',
+        name: node.name,
+        team: node.team,
         highlighted: node.id === highlightedNodeId,
       },
       position: laidOut.get(node.id) ?? { x: 0, y: 0 },
