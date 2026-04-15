@@ -1,11 +1,12 @@
 const baseUrl = import.meta.env.VITE_API_BASE ?? ''
 
-export type NodeType = 'person' | 'team'
+export type NodeType = 'person'
 
 export interface Node {
   id: string
   name: string
   type: NodeType
+  team?: string
   notes?: string
 }
 
@@ -45,14 +46,14 @@ export async function fetchGraph(): Promise<Graph> {
 
 export interface CreateNodeInput {
   name: string
-  type: NodeType
+  team?: string
 }
 
 export async function createNode(input: CreateNodeInput): Promise<Node> {
   const res = await fetch(`${baseUrl}/nodes`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
+    body: JSON.stringify({ name: input.name, type: 'person', team: input.team }),
   })
   return parseJson<Node>(res)
 }

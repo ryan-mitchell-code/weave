@@ -19,12 +19,16 @@ func CreateNode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	n.Name = strings.TrimSpace(n.Name)
+	n.Team = strings.TrimSpace(n.Team)
 	if n.Name == "" {
 		writeError(w, http.StatusBadRequest, "name is required")
 		return
 	}
-	if n.Type != models.Person && n.Type != models.Team {
-		writeError(w, http.StatusBadRequest, "type must be person or team")
+	if n.Type == "" {
+		n.Type = models.Person
+	}
+	if n.Type != models.Person {
+		writeError(w, http.StatusBadRequest, "type must be person")
 		return
 	}
 

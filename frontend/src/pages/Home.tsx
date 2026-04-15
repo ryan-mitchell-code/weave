@@ -5,7 +5,6 @@ import {
   fetchGraph,
   type Edge,
   type Node,
-  type NodeType,
 } from '../api/client'
 import { GraphView } from '../graph/GraphView'
 
@@ -18,7 +17,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [name, setName] = useState('')
-  const [type, setType] = useState<NodeType>('person')
+  const [team, setTeam] = useState('')
   const [saving, setSaving] = useState(false)
   const [edgeFromId, setEdgeFromId] = useState('')
   const [edgeToId, setEdgeToId] = useState('')
@@ -75,8 +74,9 @@ export default function Home() {
     setError(null)
     setSaving(true)
     try {
-      const newNode = await createNode({ name: nameTrimmed, type })
+      const newNode = await createNode({ name: nameTrimmed, team: team.trim() })
       setName('')
+      setTeam('')
       setNodes((prev) => [...prev, newNode])
     } catch (err) {
       setError(
@@ -89,7 +89,9 @@ export default function Home() {
 
   function nodeLabel(id: string): string {
     const n = nodes.find((x) => x.id === id)
-    return n ? `${n.name} (${n.type})` : id
+    if (!n) return id
+    const teamLabel = n.team?.trim()
+    return teamLabel ? `${n.name} (${teamLabel})` : n.name
   }
 
   async function handleCreateEdge(e: FormEvent) {
@@ -155,17 +157,17 @@ export default function Home() {
             />
           </div>
           <div style={{ marginBottom: 8 }}>
-            <label htmlFor="node-type" style={{ display: 'block' }}>
-              Type
+            <label htmlFor="node-team" style={{ display: 'block' }}>
+              Team
             </label>
-            <select
-              id="node-type"
-              value={type}
-              onChange={(e) => setType(e.target.value as NodeType)}
-            >
-              <option value="person">Person</option>
-              <option value="team">Team</option>
-            </select>
+            <input
+              id="node-team"
+              type="text"
+              value={team}
+              onChange={(e) => setTeam(e.target.value)}
+              autoComplete="off"
+              placeholder="e.g. Payments"
+            />
           </div>
           <button type="submit" disabled={saving || nameTrimmed === ''}>
             {saving ? 'Saving…' : 'Create node'}
@@ -186,7 +188,9 @@ export default function Home() {
             {nodes.map((n) => (
               <li key={n.id}>
                 <strong>{n.name}</strong>
-                <span style={{ color: '#555' }}> — {n.type}</span>
+                {n.team?.trim() && (
+                  <span style={{ color: '#555' }}> — {n.team.trim()}</span>
+                )}
                 <span style={{ color: '#888', fontSize: '0.85em' }}>
                   {' '}
                   ({n.id})
@@ -222,7 +226,7 @@ export default function Home() {
               </option>
               {nodes.map((n) => (
                 <option key={n.id} value={n.id}>
-                  {n.name} ({n.type})
+                  {nodeLabel(n.id)}
                 </option>
               ))}
             </select>
@@ -247,7 +251,7 @@ export default function Home() {
               </option>
               {toNodeOptions.map((n) => (
                 <option key={n.id} value={n.id}>
-                  {n.name} ({n.type})
+                  {nodeLabel(n.id)}
                 </option>
               ))}
             </select>
@@ -336,6 +340,9 @@ export default function Home() {
                   </p>
                   <p style={{ marginBottom: 4 }}>
                     <strong>Type:</strong> {selectedNode.type}
+                  </p>
+                  <p style={{ marginBottom: 4 }}>
+                    <strong>Team:</strong> {selectedNode.team?.trim() || '—'}
                   </p>
                   <p style={{ marginBottom: 12 }}>
                     <strong>ID:</strong>{' '}
