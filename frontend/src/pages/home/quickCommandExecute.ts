@@ -20,7 +20,7 @@ export async function executeQuickCommand(
   const toMatch = raw.match(/^(.+?)\s+to\s+(.+)$/i)
   let left = ''
   let right = ''
-  let edgeType = 'works_with'
+  let edgeType = 'reports_to'
 
   if (arrowIdx >= 0) {
     left = raw.slice(0, arrowIdx).trim()
