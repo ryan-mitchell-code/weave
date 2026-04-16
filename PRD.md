@@ -1,5 +1,25 @@
 # Weave — Product Requirements Document (PRD)
 
+## Contents
+
+1. [Overview](#1-overview)
+2. [Goals](#2-goals)
+3. [Core user loop](#3-core-user-loop)
+4. [Current status (April 2026)](#4-current-status-april-2026)
+5. [Core concepts](#5-core-concepts)
+6. [MVP scope (revised)](#6-mvp-scope-revised)
+7. [Future features](#7-future-features)
+8. [Privacy principles](#8-privacy-principles)
+9. [Design principles](#9-design-principles)
+10. [Technical stack](#10-technical-stack)
+11. [Development phases](#11-development-phases)
+12. [Non-goals](#12-non-goals)
+13. [Search (querying people and context)](#13-search-querying-people-and-context) · [13.8 Ranking model](#138-ranking-model-mvp)
+
+**Supporting:** [Related documentation](#related-documentation)
+
+---
+
 ## 1. Overview
 
 Weave is a **personal tool for understanding people and relationships** in an organisation.
@@ -73,7 +93,7 @@ The product is a **single-user, command-first graph workspace** with a polished 
 | Area | Details |
 |------|---------|
 | **Interactive graph** | **Dagre** layout (top-to-bottom). **Person-style** nodes with **team colours**. **Selection**, **hover preview**, **focus dimming** (connected component). **Focus mode** (selected node + neighbours). **Subtle animated flow** on active edges. **Highlight** feedback after actions. |
-| **Command bar** | **Primary interaction surface** (outside the context panel): **navigation** (type to match and focus people on the graph), **creation** (nodes and edges with forgiving syntax: `->`, `to`, tokens; suggestions and keyboard control). Same field is the natural home for **future** extensions (richer tag entry, notes capture, search)—without adding separate “modes” in the UI. |
+| **Command bar** | **Primary interaction surface** (outside the context panel): **navigation** (type to match and focus people on the graph), **creation** (nodes and edges with forgiving syntax: `->`, `to`, tokens; suggestions and keyboard control). May gain **small conveniences** in the same field (e.g. richer tag entry) without separate “modes.” **Full search** over names, notes, and tags is a **separate control** — **§13**. |
 | **Context panel** | Node editing (**name**, **team**, **notes**, **tags**); edge **type** editing; **node deletion**; **connections** view. |
 | **Visual design** | Dark, high-contrast workspace; graph styling centralised for iteration. |
 
@@ -82,7 +102,7 @@ The product is a **single-user, command-first graph workspace** with a polished 
 - **Persistent database** (still in-memory).
 - **Multi-user** / collaboration.
 - Advanced tag UX (autocomplete/filtering) in the UI.
-- **Search** beyond the command bar.
+- **Dedicated search** over names, tags, and notes (spec: **§13**); the command bar alone is not full search over context.
 - **AI** querying.
 
 ---
@@ -91,7 +111,7 @@ The product is a **single-user, command-first graph workspace** with a polished 
 
 ### Command bar
 
-The **command bar** is the main way to stay in flow: one input for **moving the graph** (who am I looking at?) and **changing the graph** (who exists, who links to whom). It is optimised for **keyboard use** and **immediate visual feedback** as you type. Deeper editing (notes, tags, long-form context) lives in the **context panel**; the bar remains the fast path for structure and navigation.
+The **command bar** is the main way to stay in flow: one input for **moving the graph** (who am I looking at?) and **changing the graph** (who exists, who links to whom). It is optimised for **keyboard use** and **immediate visual feedback** as you type. Deeper editing (notes, tags, long-form context) lives in the **context panel**; the bar remains the fast path for structure and navigation. **Dedicated search** (query notes, tags, and names together) is specified in **§13** — not the same field as the command bar.
 
 ### Nodes
 
@@ -182,7 +202,7 @@ Weave will offer **grounded, practical help** drawn from **your notes and graph 
 ### Product depth
 
 - Notes + tags UI  
-- Search and filtering  
+- **Search and filtering** — see **§13** (dedicated search input; graph-integrated results).  
 - Export / import  
 - Backups  
 
@@ -243,6 +263,207 @@ Weave will offer **grounded, practical help** drawn from **your notes and graph 
 - Not an **enterprise org-chart** product (at this stage).  
 - Not a **multi-user SaaS** (for now).  
 - Not a **generic AI chatbot** over user data.  
+
+---
+
+## 13. Search (querying people and context)
+
+Search allows users to **query their understanding of people**, not just locate nodes.
+
+It combines:
+
+- **Names** (identity)
+- **Tags** (signals)
+- **Notes** (context and meaning)
+
+**MVP:** plain-text queries over **names, tags, and notes** (**§13.5**), ranked by a **weighted score** that also uses **recency** and **graph proximity** (when a node is selected) — **§13.8**. Good for questions like *“Who knows payments?”*
+
+**Later:** **query language** or AI that understands **graph structure inside the question** (e.g. *“Who is connected to Alice and works on infra?”* as one utterance) — **§13.7**; optional ranking tweaks beyond **§13.8**.
+
+---
+
+### 13.1 Principles
+
+- **Search is contextual** — results reflect what the user has written (notes, tags), not an external source of truth.
+- **Search is fast** — results update as you type.
+- **Search is integrated** — results are tied directly to the graph (not a separate page).
+- **Search complements the command bar** — it does not replace it.
+
+---
+
+### 13.2 Interaction model
+
+Search is accessed via a **dedicated search input** (separate from the command bar).
+
+| Input | Purpose |
+|-------|---------|
+| **Command bar** | Create and navigate |
+| **Search** | Query knowledge |
+
+---
+
+### 13.3 Behaviour
+
+#### Live results
+
+- Results update **on every keystroke**.
+- Ranked list of **people (nodes)**.
+
+Each result shows:
+
+- Name
+- Team
+- Matching snippet (from notes or tags when applicable)
+
+---
+
+#### Graph integration
+
+Search is not just a list:
+
+- **Top result is focused in the graph**
+- Matching nodes are:
+  - highlighted
+  - non-matching nodes are faded
+
+This preserves **spatial understanding**.
+
+---
+
+#### Selection
+
+- Arrow keys navigate results
+- Enter:
+  - focuses selected node
+  - opens context panel
+
+---
+
+### 13.4 Ranking (MVP)
+
+Results are ordered by a **total score** per node: a **weighted combination of signals** (name, tags, notes, recency, optional graph proximity). Exact weights, matching rules, and tie-breaks: **§13.8**.
+
+---
+
+### 13.5 Query types (MVP)
+
+Search supports:
+
+- **Name search**
+  - `alice`
+
+- **Topic search (notes/tags)**
+  - `payments`
+  - `incident`
+
+- **Combined (basic)**
+  - `alice payments`
+
+No complex syntax or filters in MVP.
+
+---
+
+### 13.6 Relationship to command bar
+
+The command bar already supports:
+
+- navigation (type → focus)
+- creation (nodes/edges)
+
+Search extends this by:
+
+- surfacing **contextual matches** (notes/tags)
+- supporting **broader queries**
+
+The two should feel consistent but remain distinct.
+
+---
+
+### 13.7 Future extensions
+
+- Filter by team, tag, or relationship type
+- Query by graph structure:
+  - “connected to Alice”
+- AI-assisted queries:
+  - “Who might help with payments?”
+
+---
+
+### 13.8 Ranking model (MVP)
+
+Search ranking uses a **weighted combination of signals**. Each node gets a **score** from how well it matches the query (and optional context).
+
+---
+
+#### Signals
+
+1. **Exact name match**
+2. **Starts-with name match**
+3. **Partial name match**
+4. **Tag match**
+5. **Notes match**
+6. **Recency**
+7. **Graph proximity** (if a node is selected)
+
+---
+
+#### Scoring (MVP weights)
+
+| Signal | Score |
+|--------|------:|
+| Exact name match | +100 |
+| Starts-with name match | +70 |
+| Partial name match | +50 |
+| Tag match | +40 |
+| Notes match | +20 |
+| Recently viewed/edited | +10 |
+| Connected to selected node | +15 |
+
+---
+
+#### Notes matching
+
+- Simple **substring** match (case-insensitive).
+- **No NLP** in MVP.
+- Prefer matches **earlier in the text** (optional enhancement).
+
+---
+
+#### Tag matching
+
+- **Exact** tag match preferred vs loose match.
+- Tags are **stronger signals** than notes (see weights).
+
+---
+
+#### Recency
+
+- Based on **recently selected** and **recently edited** nodes.
+- **Decays** over time (implementation detail: product-defined half-life or step-down).
+
+---
+
+#### Graph proximity
+
+When **a node is selected**:
+
+- **Direct neighbours** receive a boost.
+- Supports questions in the spirit of *“who near this person might help?”* (still driven by the **same text query**; not a separate graph query language in MVP).
+
+---
+
+#### Sorting
+
+- Sort by **total score** (descending).
+- **Stable fallback:** alphabetical by **name**.
+
+---
+
+#### Constraints
+
+- No **complex query language** in MVP.
+- No **filters** in MVP.
+- **No AI** scoring in MVP.
 
 ---
 
