@@ -13,9 +13,9 @@ import { Input } from '../components/ui/input'
 import { QuickInputBar } from '../components/home/QuickInputBar'
 import { DetailsPanel } from '../components/home/details/DetailsPanel'
 import { formatDisplayName } from '../lib/displayFormat'
-import { getTeamDisplay } from '../graph/team'
 import { normalizeTagList } from '../lib/normalizeTags'
 import { EDGE_TYPE_OPTIONS, SEARCH_RESULTS_LIMIT } from './home/constants'
+import { nodeMatchesSearchQuery, rankGraphSearchResults } from './home/searchMatch'
 import { formatEdgeTypeLabel, formatNodeLabel } from './home/labels'
 import { useDeleteNodeShortcut } from './home/useDeleteNodeShortcut'
 import { useHighlightFlash } from './home/useHighlightFlash'
@@ -44,15 +44,16 @@ export default function Home() {
   const searchActive = searchQuery.trim().length > 0
 
   const searchResults = useMemo(() => {
-    if (!searchQuery.trim()) return []
-    const q = searchQuery.toLowerCase()
-    return nodes.filter((n) => n.name.toLowerCase().includes(q)).slice(0, SEARCH_RESULTS_LIMIT)
+    const trimmed = searchQuery.trim()
+    if (!trimmed) return []
+    return rankGraphSearchResults(nodes, trimmed, SEARCH_RESULTS_LIMIT)
   }, [nodes, searchQuery])
 
   const previewNodeId = useMemo(() => {
     if (searchResults.length === 0) return null
-    if (searchActiveIndex >= 0) return searchResults[searchActiveIndex]?.id ?? null
-    return searchResults[0]?.id ?? null
+    if (searchActiveIndex >= 0)
+      return searchResults[searchActiveIndex]?.node.id ?? null
+    return searchResults[0]?.node.id ?? null
   }, [searchResults, searchActiveIndex])
 
   useEffect(() => {
@@ -73,7 +74,7 @@ export default function Home() {
     if (!searchActive) return null
     const q = searchQuery.trim().toLowerCase()
     return new Set(
-      nodes.filter((n) => n.name.toLowerCase().includes(q)).map((n) => n.id),
+      nodes.filter((n) => nodeMatchesSearchQuery(n, q)).map((n) => n.id),
     )
   }, [nodes, searchQuery, searchActive])
 
@@ -309,12 +310,12 @@ export default function Home() {
               />
               <div className="relative w-44 shrink-0 md:w-52">
                 <Input
-                  aria-label="Search people by name"
+                  aria-label="Search people by name, team, tags, or notes"
                   aria-expanded={searchDropdownOpen && searchResults.length > 0}
                   aria-controls="graph-search-results"
                   aria-activedescendant={
                     searchActiveIndex >= 0 && searchResults[searchActiveIndex]
-                      ? `graph-search-result-${searchResults[searchActiveIndex].id}`
+                      ? `graph-search-result-${searchResults[searchActiveIndex].node.id}`
                       : undefined
                   }
                   role="combobox"
@@ -351,7 +352,7 @@ export default function Home() {
                     } else if (e.key === 'Enter') {
                       if (searchActiveIndex >= 0 && searchResults[searchActiveIndex]) {
                         e.preventDefault()
-                        selectSearchResult(searchResults[searchActiveIndex].id)
+                        selectSearchResult(searchResults[searchActiveIndex].node.id)
                       }
                     } else if (e.key === 'Escape') {
                       e.preventDefault()
@@ -368,7 +369,7 @@ export default function Home() {
                     role="listbox"
                     className="absolute z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 shadow-lg"
                   >
-                    {searchResults.map((n, idx) => (
+                    {searchResults.map(({ node: n, matchHint }, idx) => (
                       <button
                         key={n.id}
                         id={`graph-search-result-${n.id}`}
@@ -385,9 +386,9 @@ export default function Home() {
                         <div className="text-sm font-semibold text-slate-100">
                           {formatDisplayName(n.name)}
                         </div>
-                        <div className="text-xs text-slate-400">
-                          {getTeamDisplay(n)}
-                        </div>
+                        {matchHint ? (
+                          <div className="text-xs text-slate-400">{matchHint}</div>
+                        ) : null}
                       </button>
                     ))}
                   </div>
