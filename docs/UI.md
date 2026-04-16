@@ -26,12 +26,13 @@ Built with **React Flow**; positions come from **Dagre** (top-to-bottom layering
 **Matching (graph highlight):** While the trimmed query is non-empty, nodes match if **any** of these fields contains the query as a **case-insensitive substring**: **name**, **team**, **tags** (any tag), **notes**.
 
 - **Matching** nodes: full opacity + subtle blue **glow** (`drop-shadow` only — no scale, so layout positions stay fixed).
-- **Non-matching** nodes and edges that do **not** touch a match are **faded**; edges incident to at least one matching node keep normal stroke opacity.
+- **While typing:** **non-matching** nodes and edges that do **not** touch a matching node use the strict fade (global match highlight).
+- **After choosing someone from the search list** (Enter / row click): the same **focus connected component** as a **direct node click** keeps normal focus opacity and **animated** edges for that subgraph, even when those nodes or internal edges do not match the query; the rest of the graph still uses the strict match fade.
 - Search **layers on top** of the existing graph (layout and focus-mode rules are unchanged).
 
 **Dropdown (top results):** Up to **8** rows, **ranked** by a simple score (sum of category hits, each category at most once): name **+5**, team **+3**, any matching tag **+2**, notes **+1**. Ties break alphabetically by name. Each row shows the **person name** and, when the strongest match is **not** the name alone, a single hint line: **`Team: …`**, **`Tag: …`**, or a short **notes** excerpt (~40 characters, ellipsis).
 
-**Keyboard and preview:** **ArrowDown** / **ArrowUp** move the active row (minimum index **0** while results exist). **Enter** selects the active row (opens the node context panel); the query **stays** in the field. **Escape** clears the active row index and closes the list. Mouse **hover** on a row updates the active row. While results are shown, the graph **preview** uses the same focus-dimming rules as node hover: the **preview anchor** is the **active list row** if any, otherwise the **first** ranked result, then graph **hover**, then **selection** (`searchPreviewNodeId` → `hoveredNodeId` → `selectedNodeId` in `GraphView`).
+**Keyboard and preview:** **ArrowDown** / **ArrowUp** move the active row (minimum index **0** while results exist). **Enter** selects the active row (opens the node context panel); the query **stays** in the field. **Escape** clears the active row index and closes the list. Mouse **hover** on a row updates the active row. While the **results dropdown is open**, the graph **preview** uses the same focus-dimming rules as node hover: the **preview anchor** is the **active list row** if any, otherwise the **first** ranked result, then graph **hover**, then **selection** (`searchPreviewNodeId` → `hoveredNodeId` → `selectedNodeId` in `GraphView`). After the list **closes** (pick, Escape, or blur), `searchPreviewNodeId` is not applied, so dimming matches a **direct node click** (**hover**, then **selection**).
 
 ### 2.1 Person nodes
 
@@ -50,7 +51,7 @@ Built with **React Flow**; positions come from **Dagre** (top-to-bottom layering
 | **Hover node** | **Preview focus:** the **connected component** around the hovered node stays full **opacity**; other nodes **fade**. **Edges** in that component stay strong; others **dim**. Does not change click selection. |
 | **Hover leave** | Preview clears after a short delay (~75ms) to reduce flicker when moving between nodes. |
 
-When **search** supplies a preview node, **search preview** wins for dimming; otherwise **hover** takes precedence over **selection** until the pointer leaves or you click (hover is cleared on node click).
+When the **search results list is open** and a preview node is passed to the graph, **search preview** wins for dimming; otherwise **hover** takes precedence over **selection** until the pointer leaves or you click (hover is cleared on node click).
 
 ### 2.3 Focus mode (toggle)
 

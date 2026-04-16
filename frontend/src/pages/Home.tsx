@@ -35,6 +35,11 @@ export default function Home() {
   const [nodeTagsDraft, setNodeTagsDraft] = useState<string[]>([])
   const [focusMode, setFocusMode] = useState(false)
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
+  const [searchBlendOverlayWithSelection, setSearchBlendOverlayWithSelection] = useState(false)
+
+  const exitSearchBlendOverlay = useCallback(() => {
+    setSearchBlendOverlayWithSelection(false)
+  }, [])
 
   const {
     highlightedNodeId,
@@ -158,10 +163,15 @@ export default function Home() {
         setSelectedNodeId(nodeId)
         setSelectedEdgeId(null)
         markRecentNode(nodeId)
+        setSearchBlendOverlayWithSelection(true)
       },
       [markRecentNode],
     ),
   })
+
+  // List preview must not override selection once the dropdown is closed (e.g. Enter / row click).
+  const searchPreviewNodeIdForGraph =
+    searchDropdownOpen && searchResults.length > 0 ? previewNodeId : null
 
   async function handleEdgeTypeChange(nextType: string) {
     if (!selectedEdge || edgeTypeSaving) return
@@ -234,13 +244,14 @@ export default function Home() {
       await deleteNode({ id: nodeId })
       setNodes((prev) => prev.filter((n) => n.id !== nodeId))
       setEdges((prev) => prev.filter((e) => e.from_id !== nodeId && e.to_id !== nodeId))
+      exitSearchBlendOverlay()
       setSelectedNodeId(null)
       setSelectedEdgeId(null)
       clearNodeHighlightIf(nodeId)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not delete node.')
     }
-  }, [clearNodeHighlightIf])
+  }, [clearNodeHighlightIf, exitSearchBlendOverlay])
 
   useDeleteNodeShortcut(selectedNodeId, handleDeleteNode)
 
@@ -282,7 +293,10 @@ export default function Home() {
               <GraphSearchInput
                 loading={loading}
                 query={searchQuery}
-                onQueryChange={setSearchQuery}
+                onQueryChange={(value) => {
+                  exitSearchBlendOverlay()
+                  setSearchQuery(value)
+                }}
                 results={searchResults}
                 activeIndex={searchActiveIndex}
                 setActiveIndex={setSearchActiveIndex}
@@ -317,17 +331,20 @@ export default function Home() {
                 hoveredNodeId={hoveredNodeId}
                 focusMode={focusMode}
                 onNodeClick={(nodeId) => {
+                  exitSearchBlendOverlay()
                   setHoveredNodeId(null)
                   setSelectedNodeId(nodeId)
                   setSelectedEdgeId(null)
                   markRecentNode(nodeId)
                 }}
                 onEdgeClick={(edgeId) => {
+                  exitSearchBlendOverlay()
                   setSelectedEdgeId(edgeId)
                   setSelectedNodeId(null)
                   setHoveredNodeId(null)
                 }}
                 onPaneClick={() => {
+                  exitSearchBlendOverlay()
                   setSelectedNodeId(null)
                   setSelectedEdgeId(null)
                   setHoveredNodeId(null)
@@ -337,7 +354,8 @@ export default function Home() {
                 height="100%"
                 searchActive={searchActive}
                 searchMatchingNodeIds={searchMatchingNodeIds}
-                searchPreviewNodeId={previewNodeId}
+                searchPreviewNodeId={searchPreviewNodeIdForGraph}
+                searchBlendNonMatchesWithFocusSubgraph={searchBlendOverlayWithSelection}
               />
             )}
           </div>

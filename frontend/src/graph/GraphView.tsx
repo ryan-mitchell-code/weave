@@ -59,6 +59,12 @@ export interface GraphViewProps {
   /** Search overlay: when true, matching nodes are emphasized; others faded (see `searchMatchingNodeIds`). */
   searchActive?: boolean
   searchMatchingNodeIds?: Set<string> | null
+  /**
+   * When true (e.g. user chose a row from the search list), non-matches inside the same
+   * hover/selection connected component keep focus styling. When false (typing), use strict
+   * match-only fading across the graph.
+   */
+  searchBlendNonMatchesWithFocusSubgraph?: boolean
 }
 
 export function GraphView({
@@ -79,6 +85,7 @@ export function GraphView({
   height = 420,
   searchActive = false,
   searchMatchingNodeIds = null,
+  searchBlendNonMatchesWithFocusSubgraph = false,
 }: GraphViewProps) {
   const hoverLeaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -165,7 +172,7 @@ export function GraphView({
             if (searchMatchingNodeIds.has(node.id)) {
               opacity = 1
               filter = SEARCH_MATCH_NODE_GLOW
-            } else {
+            } else if (!searchBlendNonMatchesWithFocusSubgraph || !isActive) {
               opacity = SEARCH_NONMATCH_NODE_OPACITY
             }
           }
@@ -186,6 +193,7 @@ export function GraphView({
     hasNodeFocus,
     searchActive,
     searchMatchingNodeIds,
+    searchBlendNonMatchesWithFocusSubgraph,
   ])
 
   const flowEdges = useMemo(
@@ -201,13 +209,17 @@ export function GraphView({
         if (searchActive && searchMatchingNodeIds) {
           const touchesMatch =
             searchMatchingNodeIds.has(edge.source) || searchMatchingNodeIds.has(edge.target)
+          const inFocusComponent = activeEdgeIds.has(edge.id)
           const prevStyle = edge.style as { opacity?: number } | undefined
           const baseOp = Number(prevStyle?.opacity ?? 1)
+          const keepFocusOpacity =
+            touchesMatch ||
+            (searchBlendNonMatchesWithFocusSubgraph && inFocusComponent)
           next = {
             ...edge,
             style: {
               ...edge.style,
-              opacity: touchesMatch ? baseOp : SEARCH_NONMATCH_EDGE_OPACITY,
+              opacity: keepFocusOpacity ? baseOp : SEARCH_NONMATCH_EDGE_OPACITY,
             },
           }
         }
@@ -234,6 +246,7 @@ export function GraphView({
       selectedEdgeId,
       searchActive,
       searchMatchingNodeIds,
+      searchBlendNonMatchesWithFocusSubgraph,
     ],
   )
 
