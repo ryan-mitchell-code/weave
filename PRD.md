@@ -2,12 +2,17 @@
 
 ## 1. Overview
 
-Weave is a **personal relationship intelligence** tool for tech leads. It separates two layers on purpose:
+Weave is a **personal tool for understanding people and relationships** in an organisation.
 
-- **Graph** — **Structure and navigation**: who exists, how they connect, how you move the map to answer “who is tied to whom?”
-- **Notes (and tags)** — **Meaning and memory**: the informal, personal knowledge that does not fit cleanly into boxes—expertise, history, risk, trust, context from real conversations.
+It separates two layers on purpose:
 
-You are not “drawing a chart for its own sake.” You are **maintaining a navigable model of people** and **a private intelligence layer** that compounds as you refine it over time.
+- **Graph** — **Structure and navigation**: who exists, how they connect, how you move through the map to answer “who is connected to whom?”
+- **Notes (and tags)** — **Context and memory**: the informal, personal knowledge that does not fit neatly into systems—expertise, history, trust, risks, and context from real conversations.
+
+You are not drawing an org chart for its own sake. You are **building a mental map you can navigate** and **capturing context that compounds over time**.
+
+The graph helps you **see structure**.  
+Notes help you **understand meaning**.
 
 ---
 
@@ -116,7 +121,7 @@ Represents **people** in the organisation.
 - **Incremental** — added and edited in small passes as you learn more.
 - **Personal** — your read on a person and the situation, not a corporate directory.
 
-The **graph** tells you **structure** (who, how connected). **Notes** carry **meaning** (what you know, why it matters). Together they form the dataset for **future reasoning**: notes are expected to be the **primary narrative input** for AI-assisted answers; the graph supplies **grounded relationships** so responses stay tied to real people and links.
+The **graph** tells you **structure** (who, how connected). **Notes** carry **meaning** (what you know, why it matters). Together they hold **your context** for **future AI-assisted answers**: notes are the **primary narrative input**; the graph supplies **grounded relationships** so responses stay tied to real people and what you recorded.
 
 They should stay **fast to write**, **easy to scan**, and **worth revisiting** as facts change.
 
@@ -156,9 +161,9 @@ Defaults to **`works_with`** on **API** create if `type` is omitted. The **comma
 
 ## 7. Future features
 
-### Intelligence & discovery
+### Understanding & discovery
 
-Weave will support **lightweight reasoning** over **notes + graph context** (and tags as signals)—not free-form chat over opaque blobs.
+Weave will offer **grounded, practical help** drawn from **your notes and graph context** (and tags as signals)—not free-form chat over opaque blobs.
 
 **Examples:**
 
@@ -229,7 +234,7 @@ Weave will support **lightweight reasoning** over **notes + graph context** (and
 | 2 | Frontend graph + command UX | **Done** |
 | 3 | PostgreSQL persistence | **Next** |
 | 4 | Advanced tags, search | Planned |
-| 5 | AI reasoning | Planned |
+| 5 | AI-assisted answers (from your context) | Planned |
 
 ---
 
