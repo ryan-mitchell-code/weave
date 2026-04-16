@@ -44,9 +44,10 @@ func GetNodes(w http.ResponseWriter, r *http.Request) {
 }
 
 type updateNodeRequest struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Team string `json:"team"`
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Team  string `json:"team"`
+	Notes string `json:"notes"`
 }
 
 func UpdateNode(w http.ResponseWriter, r *http.Request) {
@@ -59,12 +60,13 @@ func UpdateNode(w http.ResponseWriter, r *http.Request) {
 	req.ID = strings.TrimSpace(req.ID)
 	req.Name = strings.TrimSpace(req.Name)
 	req.Team = strings.TrimSpace(req.Team)
+	req.Notes = strings.TrimSpace(req.Notes)
 	if req.ID == "" || req.Name == "" {
 		writeError(w, http.StatusBadRequest, "id and name are required")
 		return
 	}
 
-	updated, err := store.UpdateNode(req.ID, req.Name, req.Team)
+	updated, err := store.UpdateNode(req.ID, req.Name, req.Team, req.Notes)
 	if err != nil {
 		if errors.Is(err, store.ErrNodeNotFound) {
 			writeError(w, http.StatusNotFound, "node not found")

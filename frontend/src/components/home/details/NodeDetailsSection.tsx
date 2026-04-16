@@ -2,18 +2,21 @@ import type { Edge, Node } from '../../../api/client'
 import { Button } from '../../ui/button'
 import { Input } from '../../ui/input'
 import { InspectorLabel, InspectorMeta, InspectorSection, InspectorValue } from './primitives'
+import { NotesInlineEditor } from './NotesInlineEditor'
 
 export type NodeDetailsSectionProps = {
   selectedNode: Node
   nodeNameDraft: string
   nodeTeamDraft: string
+  nodeNotesDraft: string
   nodeSaving: boolean
   connectedEdges: Edge[]
   nodeLabel: (id: string) => string
   formatEdgeTypeLabel: (type: string) => string
   onNodeNameChange: (value: string) => void
   onNodeTeamChange: (value: string) => void
-  onPersistNode: (name: string, team: string) => void
+  onNodeNotesChange: (value: string) => void
+  onPersistNode: (name: string, team: string, notes: string) => void
   onDeleteNode: (nodeId: string) => void
 }
 
@@ -21,15 +24,21 @@ export function NodeDetailsSection({
   selectedNode,
   nodeNameDraft,
   nodeTeamDraft,
+  nodeNotesDraft,
   nodeSaving,
   connectedEdges,
   nodeLabel,
   formatEdgeTypeLabel,
   onNodeNameChange,
   onNodeTeamChange,
+  onNodeNotesChange,
   onPersistNode,
   onDeleteNode,
 }: NodeDetailsSectionProps) {
+  function saveNodeDrafts() {
+    onPersistNode(nodeNameDraft, nodeTeamDraft, nodeNotesDraft)
+  }
+
   return (
     <div className="space-y-4">
       <InspectorSection className="space-y-3">
@@ -40,7 +49,7 @@ export function NodeDetailsSection({
             value={nodeNameDraft}
             onChange={(e) => onNodeNameChange(e.target.value)}
             onBlur={() => {
-              onPersistNode(nodeNameDraft, nodeTeamDraft)
+              saveNodeDrafts()
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
@@ -63,7 +72,7 @@ export function NodeDetailsSection({
             value={nodeTeamDraft}
             onChange={(e) => onNodeTeamChange(e.target.value)}
             onBlur={() => {
-              onPersistNode(nodeNameDraft, nodeTeamDraft)
+              saveNodeDrafts()
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
@@ -78,6 +87,16 @@ export function NodeDetailsSection({
         <div className="space-y-1">
           <InspectorMeta>ID</InspectorMeta>
           <InspectorMeta>{selectedNode.id}</InspectorMeta>
+        </div>
+        <div className="space-y-1">
+          <InspectorLabel>Notes</InspectorLabel>
+          <NotesInlineEditor
+            savedNotes={selectedNode.notes ?? ''}
+            draftNotes={nodeNotesDraft}
+            saving={nodeSaving}
+            onDraftChange={onNodeNotesChange}
+            onSave={saveNodeDrafts}
+          />
         </div>
       </InspectorSection>
 

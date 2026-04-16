@@ -29,6 +29,7 @@ export default function Home() {
   const [nodeSaving, setNodeSaving] = useState(false)
   const [nodeNameDraft, setNodeNameDraft] = useState('')
   const [nodeTeamDraft, setNodeTeamDraft] = useState('')
+  const [nodeNotesDraft, setNodeNotesDraft] = useState('')
   const [focusMode, setFocusMode] = useState(false)
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
 
@@ -103,6 +104,7 @@ export default function Home() {
     setNodeTeamDraft(
       selectedNode.team?.trim() ? formatDisplayName(selectedNode.team.trim()) : '',
     )
+    setNodeNotesDraft(selectedNode.notes ?? '')
   }, [selectedNode])
 
   const {
@@ -146,16 +148,23 @@ export default function Home() {
     }
   }
 
-  async function persistSelectedNode(name: string, team: string) {
+  async function persistSelectedNode(name: string, team: string, notes: string) {
     if (!selectedNode || nodeSaving) return
     const nextName = name.trim()
     const nextTeam = team.trim()
+    const nextNotes = notes.trim()
     if (!nextName) {
       setNodeNameDraft(selectedNode.name)
       setError('Name is required.')
       return
     }
-    if (nextName === selectedNode.name && nextTeam === (selectedNode.team ?? '')) return
+    if (
+      nextName === selectedNode.name &&
+      nextTeam === (selectedNode.team ?? '') &&
+      nextNotes === (selectedNode.notes ?? '')
+    ) {
+      return
+    }
     setNodeSaving(true)
     setError(null)
     try {
@@ -163,10 +172,12 @@ export default function Home() {
         id: selectedNode.id,
         name: nextName,
         team: nextTeam || undefined,
+        notes: nextNotes || undefined,
       })
       setNodes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)))
       setNodeNameDraft(updated.name)
       setNodeTeamDraft(updated.team ?? '')
+      setNodeNotesDraft(updated.notes ?? '')
       markRecentNode(updated.id)
       flashNode(updated.id)
     } catch (err) {
@@ -279,6 +290,7 @@ export default function Home() {
             selectedEdge={selectedEdge}
             nodeNameDraft={nodeNameDraft}
             nodeTeamDraft={nodeTeamDraft}
+            nodeNotesDraft={nodeNotesDraft}
             nodeSaving={nodeSaving}
             edgeTypeSaving={edgeTypeSaving}
             connectedEdges={connectedEdges}
@@ -287,8 +299,9 @@ export default function Home() {
             formatEdgeTypeLabel={formatEdgeTypeLabel}
             onNodeNameChange={setNodeNameDraft}
             onNodeTeamChange={setNodeTeamDraft}
-            onPersistNode={(name, team) => {
-              void persistSelectedNode(name, team)
+            onNodeNotesChange={setNodeNotesDraft}
+            onPersistNode={(name, team, notes) => {
+              void persistSelectedNode(name, team, notes)
             }}
             onDeleteNode={(nodeId) => {
               void handleDeleteNode(nodeId)

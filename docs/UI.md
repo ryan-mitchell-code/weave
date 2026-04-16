@@ -93,6 +93,7 @@ The **context panel** (implementation: `components/home/details`) appears when a
 ### Node
 
 - Edit **name** and **team** (inline inputs); **save on blur** or **Enter** on name field.
+- Edit **notes** inline (click-to-edit, autosave on blur / Cmd+Enter, Escape to cancel).
 - Read-only **type** and **id** metadata.
 - **Delete node** (button).
 - **Connections** list with formatted labels and edge types.
@@ -102,7 +103,7 @@ The **context panel** (implementation: `components/home/details`) appears when a
 - Change **relationship type** (dropdown / select aligned with API types).
 - Context for **source** and **target** nodes where applicable.
 
-**Note:** **Notes** and **tags** are planned in the PRD but **not** exposed in this panel yet.
+**Note:** **Tags** remain planned in the PRD; notes editing is now available in this panel.
 
 ---
 

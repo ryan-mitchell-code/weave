@@ -62,6 +62,7 @@ export interface UpdateNodeInput {
   id: string
   name: string
   team?: string
+  notes?: string
 }
 
 export async function updateNode(input: UpdateNodeInput): Promise<Node> {
@@ -72,6 +73,7 @@ export async function updateNode(input: UpdateNodeInput): Promise<Node> {
       id: input.id,
       name: input.name,
       team: input.team,
+      notes: input.notes,
     }),
   })
   return parseJson<Node>(res)
