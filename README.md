@@ -1,6 +1,6 @@
 # Weave
 
-Weave is a **single-user relationship intelligence** workspace for tech leads: a **living map** of who works with whom, how people connect, and **per-person notes and tags** for context. It is a **command-first graph** backed by a **Go REST API** (in-memory) and a **React** UI: **React Flow** visualisation, **command bar** for fast entry, and a **context panel** for editing the current selection.
+Weave is a **single-user relationship intelligence** workspace for tech leads: a **graph** for **who connects to whom** (structure and navigation) and **notes/tags** for **what you know** (personal context that compounds over time). **Command bar** + **React Flow** graph + **context panel**; **Go REST API** (in-memory) and **React** (Vite) frontend.
 
 **Documentation:** [PRD.md](PRD.md) (product intent, MVP, phases) · [docs/UI.md](docs/UI.md) (UI behaviour: graph, command bar, context panel, keyboard)
 
