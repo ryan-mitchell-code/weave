@@ -9,6 +9,7 @@ import {
 } from '../api/client'
 import { GraphView } from '../graph/GraphView'
 import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
 import { QuickInputBar } from '../components/home/QuickInputBar'
 import { DetailsPanel } from '../components/home/details/DetailsPanel'
 import { formatDisplayName } from '../lib/displayFormat'
@@ -34,6 +35,17 @@ export default function Home() {
   const [nodeTagsDraft, setNodeTagsDraft] = useState<string[]>([])
   const [focusMode, setFocusMode] = useState(false)
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const searchActive = searchQuery.trim().length > 0
+
+  const searchMatchingNodeIds = useMemo(() => {
+    if (!searchActive) return null
+    const q = searchQuery.trim().toLowerCase()
+    return new Set(
+      nodes.filter((n) => n.name.toLowerCase().includes(q)).map((n) => n.id),
+    )
+  }, [nodes, searchQuery, searchActive])
 
   const {
     highlightedNodeId,
@@ -236,22 +248,33 @@ export default function Home() {
         <section className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900 shadow-sm">
           <header className="flex items-center justify-between gap-3 border-b border-slate-800 bg-slate-900 px-5 py-4">
             <h1 className="whitespace-nowrap text-base font-semibold">Weave</h1>
-            <QuickInputBar
-              quickInput={quickInput}
-              setQuickInput={setQuickInput}
-              quickSaving={quickSaving}
-              loading={loading}
-              quickSuggestionsOpen={quickSuggestionsOpen}
-              setQuickSuggestionsOpen={setQuickSuggestionsOpen}
-              activeSuggestionIndex={activeSuggestionIndex}
-              setActiveSuggestionIndex={setActiveSuggestionIndex}
-              quickContext={quickContext}
-              quickSuggestions={quickSuggestions}
-              exactMatchNode={exactMatchNode}
-              quickListboxId={quickListboxId}
-              applyQuickSuggestion={applyQuickSuggestion}
-              handleQuickCreate={handleQuickCreate}
-            />
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <QuickInputBar
+                quickInput={quickInput}
+                setQuickInput={setQuickInput}
+                quickSaving={quickSaving}
+                loading={loading}
+                quickSuggestionsOpen={quickSuggestionsOpen}
+                setQuickSuggestionsOpen={setQuickSuggestionsOpen}
+                activeSuggestionIndex={activeSuggestionIndex}
+                setActiveSuggestionIndex={setActiveSuggestionIndex}
+                quickContext={quickContext}
+                quickSuggestions={quickSuggestions}
+                exactMatchNode={exactMatchNode}
+                quickListboxId={quickListboxId}
+                applyQuickSuggestion={applyQuickSuggestion}
+                handleQuickCreate={handleQuickCreate}
+              />
+              <Input
+                aria-label="Search people by name"
+                type="text"
+                placeholder="Search people..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-9 w-44 shrink-0 md:w-52"
+                disabled={loading}
+              />
+            </div>
             <div className="flex gap-2 whitespace-nowrap">
               <Button
                 type="button"
@@ -295,6 +318,8 @@ export default function Home() {
                 onNodeHover={setHoveredNodeId}
                 onNodeHoverEnd={endNodeHover}
                 height="100%"
+                searchActive={searchActive}
+                searchMatchingNodeIds={searchMatchingNodeIds}
               />
             )}
           </div>

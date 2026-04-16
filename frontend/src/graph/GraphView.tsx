@@ -26,6 +26,9 @@ import {
   FOCUS_INACTIVE_NODE_OPACITY,
   HOVER_LEAVE_MS,
   NODE_OPACITY_TRANSITION,
+  SEARCH_MATCH_NODE_GLOW,
+  SEARCH_NONMATCH_EDGE_OPACITY,
+  SEARCH_NONMATCH_NODE_OPACITY,
 } from './viewConstants'
 import { formatDisplayName } from '../lib/displayFormat'
 import { getTeamDisplay } from './team'
@@ -51,6 +54,9 @@ export interface GraphViewProps {
   onNodeHover?: (nodeId: string) => void
   onNodeHoverEnd?: () => void
   height?: number | string
+  /** Name-only search overlay: when true, matching nodes are emphasized; others faded. */
+  searchActive?: boolean
+  searchMatchingNodeIds?: Set<string> | null
 }
 
 export function GraphView({
@@ -68,6 +74,8 @@ export function GraphView({
   onNodeHover,
   onNodeHoverEnd,
   height = 420,
+  searchActive = false,
+  searchMatchingNodeIds = null,
 }: GraphViewProps) {
   const hoverLeaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -146,10 +154,25 @@ export function GraphView({
         selected: node.id === selectedNodeId,
         sourcePosition: Position.Bottom,
         targetPosition: Position.Top,
-        style: {
-          opacity: hasNodeFocus ? (isActive ? 1 : FOCUS_INACTIVE_NODE_OPACITY) : 1,
-          transition: NODE_OPACITY_TRANSITION,
-        },
+        style: (() => {
+          let opacity = hasNodeFocus ? (isActive ? 1 : FOCUS_INACTIVE_NODE_OPACITY) : 1
+          let filter: string | undefined
+
+          if (searchActive && searchMatchingNodeIds) {
+            if (searchMatchingNodeIds.has(node.id)) {
+              opacity = 1
+              filter = SEARCH_MATCH_NODE_GLOW
+            } else {
+              opacity = SEARCH_NONMATCH_NODE_OPACITY
+            }
+          }
+
+          return {
+            opacity,
+            transition: `${NODE_OPACITY_TRANSITION}, filter 0.15s ease`,
+            ...(filter ? { filter } : {}),
+          }
+        })(),
       }
     })
   }, [
@@ -158,6 +181,8 @@ export function GraphView({
     highlightedNodeId,
     activeNodeIds,
     hasNodeFocus,
+    searchActive,
+    searchMatchingNodeIds,
   ])
 
   const flowEdges = useMemo(
@@ -168,12 +193,28 @@ export function GraphView({
         activeEdgeIds,
         highlightedEdgeId,
       ).map((edge) => {
-        if (edge.id !== selectedEdgeId) return edge
+        let next = edge
+
+        if (searchActive && searchMatchingNodeIds) {
+          const touchesMatch =
+            searchMatchingNodeIds.has(edge.source) || searchMatchingNodeIds.has(edge.target)
+          const prevStyle = edge.style as { opacity?: number } | undefined
+          const baseOp = Number(prevStyle?.opacity ?? 1)
+          next = {
+            ...edge,
+            style: {
+              ...edge.style,
+              opacity: touchesMatch ? baseOp : SEARCH_NONMATCH_EDGE_OPACITY,
+            },
+          }
+        }
+
+        if (next.id !== selectedEdgeId) return next
         const style =
-          (edge.style as { strokeWidth?: number; opacity?: number; stroke?: string } | undefined) ??
+          (next.style as { strokeWidth?: number; opacity?: number; stroke?: string } | undefined) ??
           {}
         return {
-          ...edge,
+          ...next,
           style: {
             ...style,
             opacity: 1,
@@ -182,7 +223,15 @@ export function GraphView({
           zIndex: 9998,
         }
       }),
-    [visibleGraph.edges, hasNodeFocus, activeEdgeIds, highlightedEdgeId, selectedEdgeId],
+    [
+      visibleGraph.edges,
+      hasNodeFocus,
+      activeEdgeIds,
+      highlightedEdgeId,
+      selectedEdgeId,
+      searchActive,
+      searchMatchingNodeIds,
+    ],
   )
 
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState(flowNodes)

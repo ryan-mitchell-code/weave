@@ -11,7 +11,7 @@ This document describes the **frontend user experience** as implemented today: l
 | Area | Behaviour |
 |------|------------|
 | **Layout** | Full-height **Home** view: main graph column plus an optional **right-hand context panel** when a node or edge is selected. |
-| **Header** | App title (**Weave**), **quick command** input (center), **Focus mode** toggle. |
+| **Header** | App title (**Weave**), **quick command** and **search** inputs (shared row), **Focus mode** toggle. |
 | **Errors** | API/load/update failures surface as a **banner** at the top of the page. |
 | **Theme** | Dark, high-contrast workspace (Tailwind + small Radix-based controls). |
 
@@ -20,6 +20,13 @@ This document describes the **frontend user experience** as implemented today: l
 ## 2. Graph canvas
 
 Built with **React Flow**; positions come from **Dagre** (top-to-bottom layering). **Nodes are not draggable**; the graph is read as a structured layout.
+
+### 2.0 Search overlay (phase 1)
+
+- **Header** search field: filters by **person name** (case-insensitive substring) while the query is non-empty.
+- **Matching** nodes: full opacity + subtle blue **glow** (`drop-shadow` only — no scale, so layout positions stay fixed).
+- **Non-matching** nodes and **non-incident** edges are **faded**; edges touching any match stay at normal stroke opacity.
+- Does **not** change hover/selection/focus-mode logic; it layers on top.
 
 ### 2.1 Person nodes
 
@@ -118,12 +125,12 @@ The **context panel** (implementation: `components/home/details`) appears when a
 
 | Path | Role |
 |------|------|
-| `frontend/src/pages/Home.tsx` | Shell, selection state, focus mode, hover preview wiring. |
-| `frontend/src/graph/GraphView.tsx` | React Flow shell, visible graph, hover debounce, viewport center. |
+| `frontend/src/pages/Home.tsx` | Shell, selection state, focus mode, hover preview, name search query state. |
+| `frontend/src/graph/GraphView.tsx` | React Flow shell, visible graph, hover debounce, viewport center, search visual overlay. |
 | `frontend/src/graph/dagreLayout.ts` | Dagre node positions. |
 | `frontend/src/graph/focusSets.ts` | Connected-component focus for dimming. |
 | `frontend/src/graph/buildFlowEdges.ts` | React Flow edge payloads (stroke, labels, animation). |
-| `frontend/src/graph/viewConstants.ts` | Shared focus/hover timing constants. |
+| `frontend/src/graph/viewConstants.ts` | Shared focus/hover timing and search-overlay opacity/glow constants. |
 | `frontend/src/graph/PersonNode.tsx` | Person card rendering and selection ring. |
 | `frontend/src/graph/CustomEdge.tsx` | Edge geometry. |
 | `frontend/src/graph/graphTheme.ts` | Layout spacing and shared edge/node tokens. |
