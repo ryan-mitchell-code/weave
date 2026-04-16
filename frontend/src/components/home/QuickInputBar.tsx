@@ -1,9 +1,11 @@
-import { useRef } from 'react'
+import { useCallback, useMemo, useRef, type KeyboardEvent } from 'react'
 import type { Node } from '../../api/client'
 import { getTeamDisplay } from '../../graph/team'
 import { formatDisplayName } from '../../lib/displayFormat'
 import { Input } from '../ui/input'
 import type { QuickContext } from '../../pages/home/quickInputLogic'
+import { getQuickInputDerivedState } from './quickInputDerived'
+import { handleQuickInputBarKeyDown } from './quickInputBarKeyboard'
 
 type QuickInputBarProps = {
   quickInput: string
@@ -42,36 +44,62 @@ export function QuickInputBar({
   /** After Tab completes a node name, next Tab inserts ` -> ` when the arrow helper is available. */
   const nameCompletedForArrowRef = useRef(false)
 
-  function refocusInputSoon() {
+  const refocusInputSoon = useCallback(() => {
     window.setTimeout(() => {
       inputRef.current?.focus()
     }, 0)
-  }
+  }, [])
 
-  const trimmedQuickInput = quickInput.trim()
-  const showArrowSuggestion =
-    quickContext.mode === 'node' &&
-    trimmedQuickInput !== '' &&
-    !trimmedQuickInput.includes(' ') &&
-    !trimmedQuickInput.includes('->')
-  const hasNodeSuggestions = quickSuggestions.length > 0
-  const hasAnyQuickOption = hasNodeSuggestions || showArrowSuggestion
-  const showViewingHint =
-    quickContext.mode === 'node' && exactMatchNode !== undefined
-  const showCreateRow =
-    quickContext.mode === 'node' && trimmedQuickInput !== '' && !exactMatchNode
-  const createRowSecondary = hasNodeSuggestions
-  const showQuickPanel =
-    showViewingHint ||
-    hasNodeSuggestions ||
-    showArrowSuggestion ||
-    showCreateRow
+  const d = useMemo(
+    () => getQuickInputDerivedState(quickInput, quickContext, quickSuggestions, exactMatchNode),
+    [quickInput, quickContext, quickSuggestions, exactMatchNode],
+  )
 
-  function applyArrowSuggestion() {
-    setQuickInput(`${trimmedQuickInput} -> `)
+  const applyArrowSuggestion = useCallback(() => {
+    setQuickInput(`${d.trimmedQuickInput} -> `)
     setQuickSuggestionsOpen(true)
     setActiveSuggestionIndex(-1)
-  }
+  }, [d.trimmedQuickInput, setQuickInput, setQuickSuggestionsOpen, setActiveSuggestionIndex])
+
+  const onKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
+      handleQuickInputBarKeyDown(e, {
+        quickInput,
+        quickContext,
+        quickSuggestions,
+        exactMatchNode,
+        quickSuggestionsOpen,
+        activeSuggestionIndex,
+        hasAnyQuickOption: d.hasAnyQuickOption,
+        hasNodeSuggestions: d.hasNodeSuggestions,
+        showArrowSuggestion: d.showArrowSuggestion,
+        setQuickSuggestionsOpen,
+        setActiveSuggestionIndex,
+        applyQuickSuggestion,
+        applyArrowSuggestion,
+        handleQuickCreate,
+        nameCompletedForArrowRef,
+        refocusInputSoon,
+      })
+    },
+    [
+      quickInput,
+      quickContext,
+      quickSuggestions,
+      exactMatchNode,
+      quickSuggestionsOpen,
+      activeSuggestionIndex,
+      d.hasAnyQuickOption,
+      d.hasNodeSuggestions,
+      d.showArrowSuggestion,
+      setQuickSuggestionsOpen,
+      setActiveSuggestionIndex,
+      applyQuickSuggestion,
+      applyArrowSuggestion,
+      handleQuickCreate,
+      refocusInputSoon,
+    ],
+  )
 
   return (
     <div className="relative min-w-0 flex-1">
@@ -82,7 +110,7 @@ export function QuickInputBar({
         value={quickInput}
         role="combobox"
         aria-expanded={
-          quickSuggestionsOpen && trimmedQuickInput !== '' && showQuickPanel
+          quickSuggestionsOpen && d.trimmedQuickInput !== '' && d.showQuickPanel
         }
         aria-controls={quickListboxId}
         aria-activedescendant={
@@ -104,80 +132,23 @@ export function QuickInputBar({
         onBlur={() => {
           window.setTimeout(() => setQuickSuggestionsOpen(false), 120)
         }}
-        onKeyDown={(e) => {
-          if (e.key === 'ArrowDown' && hasAnyQuickOption) {
-            e.preventDefault()
-            setQuickSuggestionsOpen(true)
-            if (hasNodeSuggestions) {
-              setActiveSuggestionIndex((idx) => (idx + 1) % quickSuggestions.length)
-            }
-          } else if (e.key === 'ArrowUp' && hasAnyQuickOption) {
-            e.preventDefault()
-            setQuickSuggestionsOpen(true)
-            if (hasNodeSuggestions) {
-              setActiveSuggestionIndex((idx) =>
-                idx <= 0 ? quickSuggestions.length - 1 : idx - 1,
-              )
-            }
-          } else if (
-            e.key === 'Enter' &&
-            quickSuggestionsOpen &&
-            activeSuggestionIndex >= 0 &&
-            quickSuggestions[activeSuggestionIndex]
-          ) {
-            e.preventDefault()
-            applyQuickSuggestion(quickSuggestions[activeSuggestionIndex].name)
-          } else if (
-            e.key === 'Tab' &&
-            !e.shiftKey &&
-            quickSuggestionsOpen &&
-            quickInput.trim() !== '' &&
-            hasAnyQuickOption
-          ) {
-            if (hasNodeSuggestions && (!showArrowSuggestion || !nameCompletedForArrowRef.current)) {
-              const idx = activeSuggestionIndex >= 0 ? activeSuggestionIndex : 0
-              const pick = quickSuggestions[idx]
-              if (!pick) return
-              e.preventDefault()
-              applyQuickSuggestion(pick.name)
-              if (showArrowSuggestion) {
-                nameCompletedForArrowRef.current = true
-              }
-            } else {
-              e.preventDefault()
-              applyArrowSuggestion()
-              nameCompletedForArrowRef.current = false
-            }
-          } else if (e.key === 'Enter') {
-            e.preventDefault()
-            if (quickContext.mode === 'node' && exactMatchNode) {
-              refocusInputSoon()
-              return
-            }
-            Promise.resolve(handleQuickCreate()).finally(() => {
-              refocusInputSoon()
-            })
-          } else if (e.key === 'Escape') {
-            setQuickSuggestionsOpen(false)
-            setActiveSuggestionIndex(-1)
-          }
-        }}
+        onKeyDown={onKeyDown}
         placeholder='Quick add: "alice payments" or "alice -> bob"'
         disabled={quickSaving || loading}
         className="w-full"
       />
-      {quickSuggestionsOpen && quickInput.trim() !== '' && showQuickPanel && (
+      {quickSuggestionsOpen && quickInput.trim() !== '' && d.showQuickPanel && (
         <div
           id={quickListboxId}
           role="listbox"
           className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 shadow-lg"
         >
-          {showViewingHint && exactMatchNode && (
+          {d.showViewingHint && exactMatchNode && (
             <div className="border-b border-slate-700/80 px-2.5 py-2 text-xs text-slate-400">
               Viewing {formatDisplayName(exactMatchNode.name)}
             </div>
           )}
-          {showArrowSuggestion && (
+          {d.showArrowSuggestion && (
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
@@ -214,7 +185,7 @@ export function QuickInputBar({
               )}
             </button>
           ))}
-          {showCreateRow && (
+          {d.showCreateRow && (
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
@@ -222,10 +193,10 @@ export function QuickInputBar({
                 Promise.resolve(handleQuickCreate()).finally(() => refocusInputSoon())
               }}
               className={`block w-full cursor-pointer border-none bg-transparent px-2.5 py-2 text-left hover:bg-slate-700 ${
-                createRowSecondary ? 'border-t border-slate-700 text-xs text-slate-400' : 'text-sm text-slate-100'
+                d.createRowSecondary ? 'border-t border-slate-700 text-xs text-slate-400' : 'text-sm text-slate-100'
               }`}
             >
-              Create &quot;{trimmedQuickInput}&quot;
+              Create &quot;{d.trimmedQuickInput}&quot;
             </button>
           )}
         </div>

@@ -119,14 +119,20 @@ The **context panel** (implementation: `components/home/details`) appears when a
 | Path | Role |
 |------|------|
 | `frontend/src/pages/Home.tsx` | Shell, selection state, focus mode, hover preview wiring. |
-| `frontend/src/graph/GraphView.tsx` | Layout, React Flow, focus sets, edge styles, hover handlers. |
+| `frontend/src/graph/GraphView.tsx` | React Flow shell, visible graph, hover debounce, viewport center. |
+| `frontend/src/graph/dagreLayout.ts` | Dagre node positions. |
+| `frontend/src/graph/focusSets.ts` | Connected-component focus for dimming. |
+| `frontend/src/graph/buildFlowEdges.ts` | React Flow edge payloads (stroke, labels, animation). |
+| `frontend/src/graph/viewConstants.ts` | Shared focus/hover timing constants. |
 | `frontend/src/graph/PersonNode.tsx` | Person card rendering and selection ring. |
 | `frontend/src/graph/CustomEdge.tsx` | Edge geometry. |
 | `frontend/src/graph/graphTheme.ts` | Layout spacing and shared edge/node tokens. |
 | `frontend/src/graph/team.ts` | Team display labels (`Unassigned`, formatting). |
 | `frontend/src/graph/teamColors.ts` | Per-team colours for nodes. |
-| `frontend/src/components/home/QuickInputBar.tsx` | Command UI. |
+| `frontend/src/components/home/QuickInputBar.tsx` | Command field and suggestion dropdown. |
+| `frontend/src/components/home/quickInputDerived.ts` | Pure derived UI flags (viewing / create / panel visibility). |
+| `frontend/src/components/home/quickInputBarKeyboard.ts` | Key handling for the command field. |
 | `frontend/src/components/home/details/*` | Context panel sections. |
-| `frontend/src/pages/home/*` | Quick command logic, labels, hooks. |
+| `frontend/src/pages/home/*` | Quick command hook, `quickInputLogic`, `quickCommandExecute`, labels, shortcuts. |
 | `frontend/src/lib/normalizeTags.ts` | Tag list trim/dedup before persist (matches API normalization). |
 | `frontend/src/index.css` | Global base styles; **flow** keyframes for edges. |
