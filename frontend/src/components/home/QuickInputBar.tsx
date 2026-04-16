@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import type { Node } from '../../api/client'
 import { getTeamDisplay } from '../../graph/team'
 import { formatDisplayName } from '../../lib/displayFormat'
@@ -17,7 +18,7 @@ type QuickInputBarProps = {
   quickSuggestions: Node[]
   quickListboxId: string
   applyQuickSuggestion: (nodeName: string) => void
-  handleQuickCreate: () => void
+  handleQuickCreate: () => void | Promise<void>
 }
 
 export function QuickInputBar({
@@ -35,14 +36,44 @@ export function QuickInputBar({
   applyQuickSuggestion,
   handleQuickCreate,
 }: QuickInputBarProps) {
+  const inputRef = useRef<HTMLInputElement | null>(null)
+  /** After Tab completes a node name, next Tab inserts ` -> ` when the arrow helper is available. */
+  const nameCompletedForArrowRef = useRef(false)
+
+  function refocusInputSoon() {
+    window.setTimeout(() => {
+      inputRef.current?.focus()
+    }, 0)
+  }
+
+  const trimmedQuickInput = quickInput.trim()
+  const showArrowSuggestion =
+    quickContext.mode === 'node' &&
+    trimmedQuickInput !== '' &&
+    !trimmedQuickInput.includes(' ') &&
+    !trimmedQuickInput.includes('->')
+  const hasNodeSuggestions = quickSuggestions.length > 0
+  const hasAnyQuickOption = hasNodeSuggestions || showArrowSuggestion
+
+  function applyArrowSuggestion() {
+    setQuickInput(`${trimmedQuickInput} -> `)
+    setQuickSuggestionsOpen(true)
+    setActiveSuggestionIndex(-1)
+  }
+
   return (
     <div className="relative min-w-0 flex-1">
       <Input
+        ref={inputRef}
         aria-label="Quick add node or edge"
         type="text"
         value={quickInput}
         role="combobox"
-        aria-expanded={quickSuggestionsOpen && quickSuggestions.length > 0}
+        aria-expanded={
+          quickSuggestionsOpen &&
+          trimmedQuickInput !== '' &&
+          (quickSuggestions.length > 0 || showArrowSuggestion)
+        }
         aria-controls={quickListboxId}
         aria-activedescendant={
           activeSuggestionIndex >= 0 && quickSuggestions[activeSuggestionIndex]
@@ -53,25 +84,31 @@ export function QuickInputBar({
           const v = e.target.value
           setQuickInput(v)
           setActiveSuggestionIndex(-1)
+          nameCompletedForArrowRef.current = false
           if (v.trim() !== '') setQuickSuggestionsOpen(true)
         }}
         onFocus={() => {
           setQuickSuggestionsOpen(true)
+          nameCompletedForArrowRef.current = false
         }}
         onBlur={() => {
           window.setTimeout(() => setQuickSuggestionsOpen(false), 120)
         }}
         onKeyDown={(e) => {
-          if (e.key === 'ArrowDown' && quickSuggestions.length > 0) {
+          if (e.key === 'ArrowDown' && hasAnyQuickOption) {
             e.preventDefault()
             setQuickSuggestionsOpen(true)
-            setActiveSuggestionIndex((idx) => (idx + 1) % quickSuggestions.length)
-          } else if (e.key === 'ArrowUp' && quickSuggestions.length > 0) {
+            if (hasNodeSuggestions) {
+              setActiveSuggestionIndex((idx) => (idx + 1) % quickSuggestions.length)
+            }
+          } else if (e.key === 'ArrowUp' && hasAnyQuickOption) {
             e.preventDefault()
             setQuickSuggestionsOpen(true)
-            setActiveSuggestionIndex((idx) =>
-              idx <= 0 ? quickSuggestions.length - 1 : idx - 1,
-            )
+            if (hasNodeSuggestions) {
+              setActiveSuggestionIndex((idx) =>
+                idx <= 0 ? quickSuggestions.length - 1 : idx - 1,
+              )
+            }
           } else if (
             e.key === 'Enter' &&
             quickSuggestionsOpen &&
@@ -85,17 +122,27 @@ export function QuickInputBar({
             !e.shiftKey &&
             quickSuggestionsOpen &&
             quickInput.trim() !== '' &&
-            quickSuggestions.length > 0
+            hasAnyQuickOption
           ) {
-            const idx = activeSuggestionIndex >= 0 ? activeSuggestionIndex : 0
-            const pick = quickSuggestions[idx]
-            if (pick) {
+            if (hasNodeSuggestions && (!showArrowSuggestion || !nameCompletedForArrowRef.current)) {
+              const idx = activeSuggestionIndex >= 0 ? activeSuggestionIndex : 0
+              const pick = quickSuggestions[idx]
+              if (!pick) return
               e.preventDefault()
               applyQuickSuggestion(pick.name)
+              if (showArrowSuggestion) {
+                nameCompletedForArrowRef.current = true
+              }
+            } else {
+              e.preventDefault()
+              applyArrowSuggestion()
+              nameCompletedForArrowRef.current = false
             }
           } else if (e.key === 'Enter') {
             e.preventDefault()
-            void handleQuickCreate()
+            Promise.resolve(handleQuickCreate()).finally(() => {
+              refocusInputSoon()
+            })
           } else if (e.key === 'Escape') {
             setQuickSuggestionsOpen(false)
             setActiveSuggestionIndex(-1)
@@ -107,12 +154,22 @@ export function QuickInputBar({
       />
       {quickSuggestionsOpen &&
         quickInput.trim() !== '' &&
-        quickSuggestions.length > 0 && (
+        (quickSuggestions.length > 0 || showArrowSuggestion) && (
           <div
             id={quickListboxId}
             role="listbox"
             className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 shadow-lg"
           >
+            {showArrowSuggestion && (
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={applyArrowSuggestion}
+                className="block w-full cursor-pointer border-none bg-transparent px-2.5 py-2 text-left text-xs text-slate-300 hover:bg-slate-700"
+              >
+                Add relationship: <span className="font-semibold text-slate-100">-&gt;</span>
+              </button>
+            )}
             {quickContext.mode === 'edge' && (
               <div className="border-b border-slate-700 px-2.5 py-1.5 text-xs text-slate-400">
                 Suggested nodes

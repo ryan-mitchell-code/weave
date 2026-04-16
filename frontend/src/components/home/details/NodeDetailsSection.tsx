@@ -59,7 +59,7 @@ export function NodeDetailsSection({
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
-                ;(e.currentTarget as HTMLInputElement).blur()
+                saveNodeDrafts()
               }
             }}
             disabled={nodeSaving}
@@ -77,7 +77,7 @@ export function NodeDetailsSection({
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
-                ;(e.currentTarget as HTMLInputElement).blur()
+                saveNodeDrafts()
               }
             }}
             disabled={nodeSaving}

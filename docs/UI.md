@@ -79,7 +79,9 @@ Single field for fast graph edits without opening the context panel for every ch
 |------------|---------|
 | **Add person** | `Name` or `Name TeamName` (team as remaining words). |
 | **Add edge** | `a -> b`, `a to b`, or two **known** names as tokens; optional **edge type** (e.g. suffix or `right -> type`). |
-| **Suggestions** | Filtered list of people while typing; **keyboard**: ArrowUp/Down, Enter, Tab to accept. |
+| **Suggestions** | Filtered list of people while typing; **keyboard**: ArrowUp/Down, Enter to pick a suggestion. |
+| **Tab** | With suggestions or the **Add relationship (`->`)** helper open: **first Tab** can **complete** the highlighted person name; when that helper is shown, a **second Tab** inserts ` -> ` so you can type the other person without leaving the field. |
+| **Enter** | Commits the quick command; **focus stays** in the command field after a successful action. |
 | **Loading** | Input disabled while graph is loading or a quick action is in flight. |
 
 Successful creates **flash** the new node or edge on the graph and may **update selection** for visibility.
@@ -92,12 +94,13 @@ The **context panel** (implementation: `components/home/details`) appears when a
 
 ### Node
 
-- Edit **name** and **team** (inline inputs); **save on blur** or **Enter** on name field.
+- Edit **name** and **team** (pill-style inputs); **save on blur** or **Enter**; focus **stays** in the field (no jump to another control).
 - Edit **notes** inline (click-to-edit, autosave on blur / Cmd+Enter, Escape to cancel).
 - Edit **tags** inline (pill list, `+ Add tag`, Enter create, Backspace remove-last, `×` remove).
-- Read-only **type** and **id** metadata.
 - **Delete node** (button).
 - **Connections** list with formatted labels and edge types.
+
+`id` and `type` remain on the API model but are **omitted from the panel** to reduce noise.
 
 ### Edge
 
@@ -122,4 +125,5 @@ The **context panel** (implementation: `components/home/details`) appears when a
 | `frontend/src/components/home/QuickInputBar.tsx` | Command UI. |
 | `frontend/src/components/home/details/*` | Context panel sections. |
 | `frontend/src/pages/home/*` | Quick command logic, labels, hooks. |
+| `frontend/src/lib/normalizeTags.ts` | Tag list trim/dedup before persist (matches API normalization). |
 | `frontend/src/index.css` | Global base styles; **flow** keyframes for edges. |

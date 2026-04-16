@@ -12,6 +12,7 @@ import { Button } from '../components/ui/button'
 import { QuickInputBar } from '../components/home/QuickInputBar'
 import { DetailsPanel } from '../components/home/details/DetailsPanel'
 import { formatDisplayName } from '../lib/displayFormat'
+import { normalizeTagList } from '../lib/normalizeTags'
 import { EDGE_TYPE_OPTIONS } from './home/constants'
 import { formatEdgeTypeLabel, formatNodeLabel } from './home/labels'
 import { useDeleteNodeShortcut } from './home/useDeleteNodeShortcut'
@@ -160,10 +161,7 @@ export default function Home() {
     const nextName = name.trim()
     const nextTeam = team.trim()
     const nextNotes = notes.trim()
-    const nextTags = tags
-      .map((tag) => tag.trim())
-      .filter(Boolean)
-      .filter((tag, idx, arr) => arr.findIndex((x) => x.toLowerCase() === tag.toLowerCase()) === idx)
+    const nextTags = normalizeTagList(tags)
     const prevTags = selectedNode.tags ?? []
     if (!nextName) {
       setNodeNameDraft(selectedNode.name)

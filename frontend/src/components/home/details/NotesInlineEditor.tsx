@@ -25,6 +25,14 @@ export function NotesInlineEditor({
     if (editing) textareaRef.current?.focus()
   }, [editing])
 
+  useEffect(() => {
+    if (!editing) return
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [editing, draftNotes])
+
   function cancelEdit() {
     skipNextBlurSave.current = true
     onDraftChange(savedNotes)
@@ -84,7 +92,7 @@ export function NotesInlineEditor({
       disabled={saving}
       placeholder={EMPTY_NOTES_PLACEHOLDER}
       className="w-full resize-y rounded-lg bg-slate-800 p-3 text-slate-200 leading-relaxed ring-1 ring-slate-600 outline-none"
-      rows={5}
+      rows={3}
     />
   )
 }

@@ -1,6 +1,6 @@
 # Weave
 
-Weave is a **single-user relationship intelligence** workspace for tech leads: a **living map** of who works with whom, how people connect, and (eventually) **notes and context** per person. Today it is a **command-first graph** backed by a **Go REST API** (in-memory) and a **React** UI: **React Flow** visualisation, **command bar** for fast entry, and a **context panel** for editing the current selection.
+Weave is a **single-user relationship intelligence** workspace for tech leads: a **living map** of who works with whom, how people connect, and **per-person notes and tags** for context. It is a **command-first graph** backed by a **Go REST API** (in-memory) and a **React** UI: **React Flow** visualisation, **command bar** for fast entry, and a **context panel** for editing the current selection.
 
 **Documentation:** [PRD.md](PRD.md) (product intent, MVP, phases) · [docs/UI.md](docs/UI.md) (UI behaviour: graph, command bar, context panel, keyboard)
 
@@ -12,7 +12,7 @@ Weave is a **single-user relationship intelligence** workspace for tech leads: a
 - **Typed relationships** between people (`works_with`, `reports_to`, `depends_on`, plus custom strings the API accepts).
 - **Interactive graph**: Dagre layout, person-style nodes with **team colours**, selection, **hover preview**, **focus dimming**, **focus mode**, **animated active edges**, highlights after create/edit.
 - **Command bar**: quick add nodes and edges; forgiving syntax; suggestions with keyboard navigation.
-- **Context panel**: edit name/team, delete node, change edge type, view connections.
+- **Context panel**: edit name, team, notes, and tags; delete node; change edge type; view connections.
 - **Dark UI** (Tailwind + small Radix-based components).
 
 Details: **[docs/UI.md](docs/UI.md)**.
