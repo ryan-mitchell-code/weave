@@ -28,7 +28,7 @@ func AddNode(n models.Node) {
 	Nodes = append(Nodes, n)
 }
 
-func UpdateNode(id, name, team, notes string) (models.Node, error) {
+func UpdateNode(id, name, team, notes string, tags []string) (models.Node, error) {
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -40,6 +40,7 @@ func UpdateNode(id, name, team, notes string) (models.Node, error) {
 		updated.Name = name
 		updated.Team = team
 		updated.Notes = notes
+		updated.Tags = tags
 		Nodes[i] = updated
 		return updated, nil
 	}

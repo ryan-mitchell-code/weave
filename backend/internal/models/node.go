@@ -12,4 +12,5 @@ type Node struct {
 	Type  NodeType `json:"type"`
 	Team  string   `json:"team"`
 	Notes string   `json:"notes"`
+	Tags  []string `json:"tags"`
 }

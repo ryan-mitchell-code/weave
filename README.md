@@ -8,7 +8,7 @@ Weave is a **single-user relationship intelligence** workspace for tech leads: a
 
 ## Features (current)
 
-- **People** as graph nodes with optional **team** metadata (team is a field, not a separate node type). **`notes`** are supported in the context panel (inline editor with autosave).
+- **People** as graph nodes with optional **team** metadata (team is a field, not a separate node type). **`notes`** and lightweight **`tags`** are supported in the context panel (inline editing + autosave).
 - **Typed relationships** between people (`works_with`, `reports_to`, `depends_on`, plus custom strings the API accepts).
 - **Interactive graph**: Dagre layout, person-style nodes with **team colours**, selection, **hover preview**, **focus dimming**, **focus mode**, **animated active edges**, highlights after create/edit.
 - **Command bar**: quick add nodes and edges; forgiving syntax; suggestions with keyboard navigation.

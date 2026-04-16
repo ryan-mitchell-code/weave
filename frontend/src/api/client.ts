@@ -8,6 +8,7 @@ export interface Node {
   type: NodeType
   team?: string
   notes?: string
+  tags?: string[]
 }
 
 export interface Edge {
@@ -63,6 +64,7 @@ export interface UpdateNodeInput {
   name: string
   team?: string
   notes?: string
+  tags?: string[]
 }
 
 export async function updateNode(input: UpdateNodeInput): Promise<Node> {
@@ -74,6 +76,7 @@ export async function updateNode(input: UpdateNodeInput): Promise<Node> {
       name: input.name,
       team: input.team,
       notes: input.notes,
+      tags: input.tags,
     }),
   })
   return parseJson<Node>(res)

@@ -30,6 +30,7 @@ export default function Home() {
   const [nodeNameDraft, setNodeNameDraft] = useState('')
   const [nodeTeamDraft, setNodeTeamDraft] = useState('')
   const [nodeNotesDraft, setNodeNotesDraft] = useState('')
+  const [nodeTagsDraft, setNodeTagsDraft] = useState<string[]>([])
   const [focusMode, setFocusMode] = useState(false)
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
 
@@ -105,6 +106,7 @@ export default function Home() {
       selectedNode.team?.trim() ? formatDisplayName(selectedNode.team.trim()) : '',
     )
     setNodeNotesDraft(selectedNode.notes ?? '')
+    setNodeTagsDraft(selectedNode.tags ?? [])
   }, [selectedNode])
 
   const {
@@ -148,11 +150,21 @@ export default function Home() {
     }
   }
 
-  async function persistSelectedNode(name: string, team: string, notes: string) {
+  async function persistSelectedNode(
+    name: string,
+    team: string,
+    notes: string,
+    tags: string[],
+  ) {
     if (!selectedNode || nodeSaving) return
     const nextName = name.trim()
     const nextTeam = team.trim()
     const nextNotes = notes.trim()
+    const nextTags = tags
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+      .filter((tag, idx, arr) => arr.findIndex((x) => x.toLowerCase() === tag.toLowerCase()) === idx)
+    const prevTags = selectedNode.tags ?? []
     if (!nextName) {
       setNodeNameDraft(selectedNode.name)
       setError('Name is required.')
@@ -161,7 +173,9 @@ export default function Home() {
     if (
       nextName === selectedNode.name &&
       nextTeam === (selectedNode.team ?? '') &&
-      nextNotes === (selectedNode.notes ?? '')
+      nextNotes === (selectedNode.notes ?? '') &&
+      nextTags.length === prevTags.length &&
+      nextTags.every((tag, i) => tag === prevTags[i])
     ) {
       return
     }
@@ -173,11 +187,13 @@ export default function Home() {
         name: nextName,
         team: nextTeam || undefined,
         notes: nextNotes || undefined,
+        tags: nextTags,
       })
       setNodes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)))
       setNodeNameDraft(updated.name)
       setNodeTeamDraft(updated.team ?? '')
       setNodeNotesDraft(updated.notes ?? '')
+      setNodeTagsDraft(updated.tags ?? [])
       markRecentNode(updated.id)
       flashNode(updated.id)
     } catch (err) {
@@ -291,6 +307,7 @@ export default function Home() {
             nodeNameDraft={nodeNameDraft}
             nodeTeamDraft={nodeTeamDraft}
             nodeNotesDraft={nodeNotesDraft}
+            nodeTagsDraft={nodeTagsDraft}
             nodeSaving={nodeSaving}
             edgeTypeSaving={edgeTypeSaving}
             connectedEdges={connectedEdges}
@@ -300,8 +317,9 @@ export default function Home() {
             onNodeNameChange={setNodeNameDraft}
             onNodeTeamChange={setNodeTeamDraft}
             onNodeNotesChange={setNodeNotesDraft}
-            onPersistNode={(name, team, notes) => {
-              void persistSelectedNode(name, team, notes)
+            onNodeTagsChange={setNodeTagsDraft}
+            onPersistNode={(name, team, notes, tags) => {
+              void persistSelectedNode(name, team, notes, tags)
             }}
             onDeleteNode={(nodeId) => {
               void handleDeleteNode(nodeId)

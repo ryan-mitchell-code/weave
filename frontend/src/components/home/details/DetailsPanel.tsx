@@ -8,6 +8,7 @@ type DetailsPanelProps = {
   nodeNameDraft: string
   nodeTeamDraft: string
   nodeNotesDraft: string
+  nodeTagsDraft: string[]
   nodeSaving: boolean
   edgeTypeSaving: boolean
   connectedEdges: Edge[]
@@ -17,7 +18,8 @@ type DetailsPanelProps = {
   onNodeNameChange: (value: string) => void
   onNodeTeamChange: (value: string) => void
   onNodeNotesChange: (value: string) => void
-  onPersistNode: (name: string, team: string, notes: string) => void
+  onNodeTagsChange: (value: string[]) => void
+  onPersistNode: (name: string, team: string, notes: string, tags: string[]) => void
   onDeleteNode: (nodeId: string) => void
   onEdgeTypeChange: (nextType: string) => void
 }
@@ -28,6 +30,7 @@ export function DetailsPanel({
   nodeNameDraft,
   nodeTeamDraft,
   nodeNotesDraft,
+  nodeTagsDraft,
   nodeSaving,
   edgeTypeSaving,
   connectedEdges,
@@ -37,6 +40,7 @@ export function DetailsPanel({
   onNodeNameChange,
   onNodeTeamChange,
   onNodeNotesChange,
+  onNodeTagsChange,
   onPersistNode,
   onDeleteNode,
   onEdgeTypeChange,
@@ -64,6 +68,7 @@ export function DetailsPanel({
             nodeNameDraft={nodeNameDraft}
             nodeTeamDraft={nodeTeamDraft}
             nodeNotesDraft={nodeNotesDraft}
+            nodeTagsDraft={nodeTagsDraft}
             nodeSaving={nodeSaving}
             connectedEdges={connectedEdges}
             nodeLabel={nodeLabel}
@@ -71,6 +76,7 @@ export function DetailsPanel({
             onNodeNameChange={onNodeNameChange}
             onNodeTeamChange={onNodeTeamChange}
             onNodeNotesChange={onNodeNotesChange}
+            onNodeTagsChange={onNodeTagsChange}
             onPersistNode={onPersistNode}
             onDeleteNode={onDeleteNode}
           />

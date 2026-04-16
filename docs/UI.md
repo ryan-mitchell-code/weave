@@ -94,6 +94,7 @@ The **context panel** (implementation: `components/home/details`) appears when a
 
 - Edit **name** and **team** (inline inputs); **save on blur** or **Enter** on name field.
 - Edit **notes** inline (click-to-edit, autosave on blur / Cmd+Enter, Escape to cancel).
+- Edit **tags** inline (pill list, `+ Add tag`, Enter create, Backspace remove-last, `×` remove).
 - Read-only **type** and **id** metadata.
 - **Delete node** (button).
 - **Connections** list with formatted labels and edge types.
@@ -103,7 +104,7 @@ The **context panel** (implementation: `components/home/details`) appears when a
 - Change **relationship type** (dropdown / select aligned with API types).
 - Context for **source** and **target** nodes where applicable.
 
-**Note:** **Tags** remain planned in the PRD; notes editing is now available in this panel.
+**Note:** Current tags are intentionally lightweight (no autocomplete/dropdowns yet); richer tag workflows remain future work.
 
 ---
 

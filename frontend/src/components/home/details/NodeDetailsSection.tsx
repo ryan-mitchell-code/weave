@@ -1,14 +1,16 @@
 import type { Edge, Node } from '../../../api/client'
 import { Button } from '../../ui/button'
-import { Input } from '../../ui/input'
-import { InspectorLabel, InspectorMeta, InspectorSection, InspectorValue } from './primitives'
+import { InspectorLabel, InspectorSection, InspectorValue } from './primitives'
 import { NotesInlineEditor } from './NotesInlineEditor'
+import { PillTextInput } from './PillTextInput'
+import { TagInlineEditor } from './TagInlineEditor'
 
 export type NodeDetailsSectionProps = {
   selectedNode: Node
   nodeNameDraft: string
   nodeTeamDraft: string
   nodeNotesDraft: string
+  nodeTagsDraft: string[]
   nodeSaving: boolean
   connectedEdges: Edge[]
   nodeLabel: (id: string) => string
@@ -16,7 +18,8 @@ export type NodeDetailsSectionProps = {
   onNodeNameChange: (value: string) => void
   onNodeTeamChange: (value: string) => void
   onNodeNotesChange: (value: string) => void
-  onPersistNode: (name: string, team: string, notes: string) => void
+  onNodeTagsChange: (value: string[]) => void
+  onPersistNode: (name: string, team: string, notes: string, tags: string[]) => void
   onDeleteNode: (nodeId: string) => void
 }
 
@@ -25,6 +28,7 @@ export function NodeDetailsSection({
   nodeNameDraft,
   nodeTeamDraft,
   nodeNotesDraft,
+  nodeTagsDraft,
   nodeSaving,
   connectedEdges,
   nodeLabel,
@@ -32,11 +36,12 @@ export function NodeDetailsSection({
   onNodeNameChange,
   onNodeTeamChange,
   onNodeNotesChange,
+  onNodeTagsChange,
   onPersistNode,
   onDeleteNode,
 }: NodeDetailsSectionProps) {
-  function saveNodeDrafts() {
-    onPersistNode(nodeNameDraft, nodeTeamDraft, nodeNotesDraft)
+  function saveNodeDrafts(nextTags: string[] = nodeTagsDraft) {
+    onPersistNode(nodeNameDraft, nodeTeamDraft, nodeNotesDraft, nextTags)
   }
 
   return (
@@ -44,7 +49,7 @@ export function NodeDetailsSection({
       <InspectorSection className="space-y-3">
         <div className="space-y-1">
           <InspectorLabel htmlFor="node-name-edit">Name</InspectorLabel>
-          <Input
+          <PillTextInput
             id="node-name-edit"
             value={nodeNameDraft}
             onChange={(e) => onNodeNameChange(e.target.value)}
@@ -58,16 +63,11 @@ export function NodeDetailsSection({
               }
             }}
             disabled={nodeSaving}
-            className="w-full focus-visible:ring-blue-500"
           />
         </div>
         <div className="space-y-1">
-          <InspectorLabel>Type</InspectorLabel>
-          <InspectorValue>{selectedNode.type}</InspectorValue>
-        </div>
-        <div className="space-y-1">
           <InspectorLabel htmlFor="node-team-edit">Team</InspectorLabel>
-          <Input
+          <PillTextInput
             id="node-team-edit"
             value={nodeTeamDraft}
             onChange={(e) => onNodeTeamChange(e.target.value)}
@@ -81,12 +81,7 @@ export function NodeDetailsSection({
               }
             }}
             disabled={nodeSaving}
-            className="w-full focus-visible:ring-blue-500"
           />
-        </div>
-        <div className="space-y-1">
-          <InspectorMeta>ID</InspectorMeta>
-          <InspectorMeta>{selectedNode.id}</InspectorMeta>
         </div>
         <div className="space-y-1">
           <InspectorLabel>Notes</InspectorLabel>
@@ -95,6 +90,15 @@ export function NodeDetailsSection({
             draftNotes={nodeNotesDraft}
             saving={nodeSaving}
             onDraftChange={onNodeNotesChange}
+            onSave={saveNodeDrafts}
+          />
+        </div>
+        <div className="space-y-1">
+          <InspectorLabel>Tags</InspectorLabel>
+          <TagInlineEditor
+            draftTags={nodeTagsDraft}
+            saving={nodeSaving}
+            onDraftChange={onNodeTagsChange}
             onSave={saveNodeDrafts}
           />
         </div>

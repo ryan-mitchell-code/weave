@@ -60,7 +60,7 @@ The product is a **single-user, command-first graph workspace** with a polished 
 
 | Area | Details |
 |------|---------|
-| **Nodes** | `GET` / `POST` / `PATCH` / `DELETE` `/nodes` — person nodes with `name`, `team`, `notes` (notes are editable in the UI context panel). |
+| **Nodes** | `GET` / `POST` / `PATCH` / `DELETE` `/nodes` — person nodes with `name`, `team`, `notes`, `tags` (notes/tags editable in the UI context panel). |
 | **Edges** | `GET` / `POST` `/edges`, `PATCH` `/edges` — relationship links with **editable type**. |
 | **Graph** | `GET` `/graph` — combined nodes and edges for the frontend. |
 
@@ -70,14 +70,14 @@ The product is a **single-user, command-first graph workspace** with a polished 
 |------|---------|
 | **Interactive graph** | **Dagre** layout (top-to-bottom). **Person-style** nodes with **team colours**. **Selection**, **hover preview**, **focus dimming** (connected component). **Focus mode** (selected node + neighbours). **Subtle animated flow** on active edges. **Highlight** feedback after actions. |
 | **Command bar** | Fast creation for nodes and edges; flexible syntax (`->`, `to`, tokens); **suggestions** with keyboard navigation. |
-| **Context panel** | Node editing (**name**, **team**, **notes**); edge **type** editing; **node deletion**; **connections** view. |
+| **Context panel** | Node editing (**name**, **team**, **notes**, **tags**); edge **type** editing; **node deletion**; **connections** view. |
 | **Visual design** | Dark, high-contrast workspace; graph styling centralised for iteration. |
 
 ### Intentionally not done yet
 
 - **Persistent database** (still in-memory).
 - **Multi-user** / collaboration.
-- **Tags** in the UI.
+- Advanced tag UX (autocomplete/filtering) in the UI.
 - **Search** beyond the command bar.
 - **AI** querying.
 
@@ -103,6 +103,7 @@ Represents **people** in the organisation.
 | `type` | Always `person` for created nodes |
 | `team` | Optional string (e.g. “Payments”) |
 | `notes` | Optional string (editable in context panel) |
+| `tags` | Optional string array (editable in context panel) |
 
 ### Notes (critical concept)
 
@@ -145,7 +146,7 @@ Defaults to **`works_with`** if unspecified on create.
 - [x] Graph visualisation and interaction  
 - [x] Command-first creation flow  
 - [x] Context panel for editing selection  
-- [ ] **Tags** in UI  
+- [x] **Notes** and lightweight **tags** in UI  
 
 ---
 
@@ -215,7 +216,7 @@ Weave will support **lightweight reasoning** over the graph and notes.
 | 1 | Graph API + in-memory storage | **Done** |
 | 2 | Frontend graph + command UX | **Done** |
 | 3 | PostgreSQL persistence | **Next** |
-| 4 | Tags, search | Planned |
+| 4 | Advanced tags, search | Planned |
 | 5 | AI reasoning | Planned |
 
 ---
