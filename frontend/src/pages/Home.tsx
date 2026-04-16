@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   deleteNode,
   fetchGraph,
@@ -13,8 +13,9 @@ import { Input } from '../components/ui/input'
 import { QuickInputBar } from '../components/home/QuickInputBar'
 import { DetailsPanel } from '../components/home/details/DetailsPanel'
 import { formatDisplayName } from '../lib/displayFormat'
+import { getTeamDisplay } from '../graph/team'
 import { normalizeTagList } from '../lib/normalizeTags'
-import { EDGE_TYPE_OPTIONS } from './home/constants'
+import { EDGE_TYPE_OPTIONS, SEARCH_RESULTS_LIMIT } from './home/constants'
 import { formatEdgeTypeLabel, formatNodeLabel } from './home/labels'
 import { useDeleteNodeShortcut } from './home/useDeleteNodeShortcut'
 import { useHighlightFlash } from './home/useHighlightFlash'
@@ -36,8 +37,37 @@ export default function Home() {
   const [focusMode, setFocusMode] = useState(false)
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [searchActiveIndex, setSearchActiveIndex] = useState(-1)
+  const [searchDropdownOpen, setSearchDropdownOpen] = useState(false)
+  const searchBlurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const searchActive = searchQuery.trim().length > 0
+
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return []
+    const q = searchQuery.toLowerCase()
+    return nodes.filter((n) => n.name.toLowerCase().includes(q)).slice(0, SEARCH_RESULTS_LIMIT)
+  }, [nodes, searchQuery])
+
+  const previewNodeId = useMemo(() => {
+    if (searchResults.length === 0) return null
+    if (searchActiveIndex >= 0) return searchResults[searchActiveIndex]?.id ?? null
+    return searchResults[0]?.id ?? null
+  }, [searchResults, searchActiveIndex])
+
+  useEffect(() => {
+    setSearchActiveIndex((i) => {
+      if (searchResults.length === 0) return -1
+      if (i >= searchResults.length) return searchResults.length - 1
+      return i
+    })
+  }, [searchResults.length])
+
+  useEffect(() => {
+    return () => {
+      if (searchBlurTimerRef.current) clearTimeout(searchBlurTimerRef.current)
+    }
+  }, [])
 
   const searchMatchingNodeIds = useMemo(() => {
     if (!searchActive) return null
@@ -234,6 +264,18 @@ export default function Home() {
 
   const nodeLabel = useCallback((id: string) => formatNodeLabel(nodes, id), [nodes])
 
+  const selectSearchResult = useCallback(
+    (nodeId: string) => {
+      setHoveredNodeId(null)
+      setSelectedNodeId(nodeId)
+      setSelectedEdgeId(null)
+      markRecentNode(nodeId)
+      setSearchDropdownOpen(false)
+      setSearchActiveIndex(-1)
+    },
+    [markRecentNode],
+  )
+
   return (
     <div className="flex h-screen font-sans">
       {error && (
@@ -265,15 +307,92 @@ export default function Home() {
                 applyQuickSuggestion={applyQuickSuggestion}
                 handleQuickCreate={handleQuickCreate}
               />
-              <Input
-                aria-label="Search people by name"
-                type="text"
-                placeholder="Search people..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-9 w-44 shrink-0 md:w-52"
-                disabled={loading}
-              />
+              <div className="relative w-44 shrink-0 md:w-52">
+                <Input
+                  aria-label="Search people by name"
+                  aria-expanded={searchDropdownOpen && searchResults.length > 0}
+                  aria-controls="graph-search-results"
+                  aria-activedescendant={
+                    searchActiveIndex >= 0 && searchResults[searchActiveIndex]
+                      ? `graph-search-result-${searchResults[searchActiveIndex].id}`
+                      : undefined
+                  }
+                  role="combobox"
+                  type="text"
+                  placeholder="Search people..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    if (e.target.value.trim()) setSearchDropdownOpen(true)
+                  }}
+                  onFocus={() => {
+                    if (searchBlurTimerRef.current) {
+                      clearTimeout(searchBlurTimerRef.current)
+                      searchBlurTimerRef.current = null
+                    }
+                    if (searchResults.length > 0) setSearchDropdownOpen(true)
+                  }}
+                  onBlur={() => {
+                    searchBlurTimerRef.current = setTimeout(() => {
+                      setSearchDropdownOpen(false)
+                      searchBlurTimerRef.current = null
+                    }, 120)
+                  }}
+                  onKeyDown={(e) => {
+                    if (searchResults.length === 0) return
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault()
+                      setSearchActiveIndex((i) =>
+                        i < 0 ? 0 : Math.min(i + 1, searchResults.length - 1),
+                      )
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault()
+                      setSearchActiveIndex((i) => (i <= 0 ? 0 : i - 1))
+                    } else if (e.key === 'Enter') {
+                      if (searchActiveIndex >= 0 && searchResults[searchActiveIndex]) {
+                        e.preventDefault()
+                        selectSearchResult(searchResults[searchActiveIndex].id)
+                      }
+                    } else if (e.key === 'Escape') {
+                      e.preventDefault()
+                      setSearchActiveIndex(-1)
+                      setSearchDropdownOpen(false)
+                    }
+                  }}
+                  className="h-9 w-full"
+                  disabled={loading}
+                />
+                {searchDropdownOpen && searchResults.length > 0 && (
+                  <div
+                    id="graph-search-results"
+                    role="listbox"
+                    className="absolute z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 shadow-lg"
+                  >
+                    {searchResults.map((n, idx) => (
+                      <button
+                        key={n.id}
+                        id={`graph-search-result-${n.id}`}
+                        type="button"
+                        role="option"
+                        aria-selected={idx === searchActiveIndex}
+                        onMouseEnter={() => setSearchActiveIndex(idx)}
+                        onMouseDown={(ev) => ev.preventDefault()}
+                        onClick={() => selectSearchResult(n.id)}
+                        className={`block w-full cursor-pointer border-none px-2.5 py-2 text-left hover:bg-slate-700 ${
+                          idx === searchActiveIndex ? 'bg-slate-700' : 'bg-transparent'
+                        }`}
+                      >
+                        <div className="text-sm font-semibold text-slate-100">
+                          {formatDisplayName(n.name)}
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          {getTeamDisplay(n)}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex gap-2 whitespace-nowrap">
               <Button
@@ -320,6 +439,7 @@ export default function Home() {
                 height="100%"
                 searchActive={searchActive}
                 searchMatchingNodeIds={searchMatchingNodeIds}
+                searchPreviewNodeId={previewNodeId}
               />
             )}
           </div>

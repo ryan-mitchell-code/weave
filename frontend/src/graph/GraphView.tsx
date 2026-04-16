@@ -45,8 +45,10 @@ export interface GraphViewProps {
   selectedEdgeId?: string | null
   highlightedNodeId?: string | null
   highlightedEdgeId?: string | null
-  /** Preview focus while hovering (takes precedence over selection for dimming only). */
+  /** Preview focus while hovering (for dimming only). */
   hoveredNodeId?: string | null
+  /** Drives focus dimming before graph hover and selection (search list / default first hit). */
+  searchPreviewNodeId?: string | null
   focusMode?: boolean
   onNodeClick?: (nodeId: string) => void
   onEdgeClick?: (edgeId: string) => void
@@ -67,6 +69,7 @@ export function GraphView({
   highlightedNodeId = null,
   highlightedEdgeId = null,
   hoveredNodeId = null,
+  searchPreviewNodeId = null,
   focusMode = false,
   onNodeClick,
   onEdgeClick,
@@ -128,7 +131,7 @@ export function GraphView({
     }
   }, [nodes, edges, focusMode, selectedNodeId])
 
-  const focusNodeId = hoveredNodeId ?? selectedNodeId
+  const focusNodeId = searchPreviewNodeId ?? hoveredNodeId ?? selectedNodeId
 
   const { activeNodeIds, activeEdgeIds } = useMemo(
     () => computeFocusSets(visibleGraph.nodes, visibleGraph.edges, focusNodeId),
