@@ -56,7 +56,7 @@ export interface GraphViewProps {
   onNodeHover?: (nodeId: string) => void
   onNodeHoverEnd?: () => void
   height?: number | string
-  /** Name-only search overlay: when true, matching nodes are emphasized; others faded. */
+  /** Search overlay: when true, matching nodes are emphasized; others faded (see `searchMatchingNodeIds`). */
   searchActive?: boolean
   searchMatchingNodeIds?: Set<string> | null
 }

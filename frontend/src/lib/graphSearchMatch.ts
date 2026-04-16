@@ -1,5 +1,15 @@
-import type { Node } from '../../api/client'
-import { capitalizeDisplayWords } from '../../lib/displayFormat'
+/**
+ * Graph header search: substring matching and ranked dropdown results.
+ *
+ * Matching drives graph highlight (all fields); ranking only affects the dropdown order.
+ * To extend (e.g. fuzzy search), centralize new match logic in `nodeMatchesSearchQuery` /
+ * `scoreNode` and keep `rankGraphSearchResults` in sync.
+ */
+import type { Node } from '../api/client'
+import { capitalizeDisplayWords } from './displayFormat'
+
+/** Max rows in the search dropdown (graph may still highlight more matches). */
+export const GRAPH_SEARCH_RESULTS_LIMIT = 8
 
 const SCORE_NAME = 5
 const SCORE_TEAM = 3
@@ -23,6 +33,11 @@ export function nodeMatchesSearchQuery(node: Node, qLower: string): boolean {
   const notes = node.notes ?? ''
   if (notes && includesInsensitive(notes, qLower)) return true
   return false
+}
+
+/** IDs of all nodes matching the query (for graph overlay). */
+export function buildGraphSearchMatchingSet(nodes: Node[], qLower: string): Set<string> {
+  return new Set(nodes.filter((n) => nodeMatchesSearchQuery(n, qLower)).map((n) => n.id))
 }
 
 function scoreNode(node: Node, qLower: string): number {
