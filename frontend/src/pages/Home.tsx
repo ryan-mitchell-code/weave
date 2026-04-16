@@ -10,6 +10,7 @@ import {
 import { GraphView } from '../graph/GraphView'
 import { Button } from '../components/ui/button'
 import { QuickInputBar } from '../components/home/QuickInputBar'
+import { GraphSearchInput, useGraphSearch } from '../components/home/graphSearch'
 import { DetailsPanel } from '../components/home/details/DetailsPanel'
 import { formatDisplayName } from '../lib/displayFormat'
 import { normalizeTagList } from '../lib/normalizeTags'
@@ -34,6 +35,11 @@ export default function Home() {
   const [nodeTagsDraft, setNodeTagsDraft] = useState<string[]>([])
   const [focusMode, setFocusMode] = useState(false)
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
+  const [searchBlendOverlayWithSelection, setSearchBlendOverlayWithSelection] = useState(false)
+
+  const exitSearchBlendOverlay = useCallback(() => {
+    setSearchBlendOverlayWithSelection(false)
+  }, [])
 
   const {
     highlightedNodeId,
@@ -137,6 +143,36 @@ export default function Home() {
     loading,
   })
 
+  const {
+    query: searchQuery,
+    setQuery: setSearchQuery,
+    searchActive,
+    matchingNodeIds: searchMatchingNodeIds,
+    previewNodeId,
+    results: searchResults,
+    activeIndex: searchActiveIndex,
+    setActiveIndex: setSearchActiveIndex,
+    dropdownOpen: searchDropdownOpen,
+    setDropdownOpen: setSearchDropdownOpen,
+    blurTimerRef: searchBlurTimerRef,
+    pickResult: pickSearchResult,
+  } = useGraphSearch(nodes, {
+    onResultPick: useCallback(
+      (nodeId: string) => {
+        setHoveredNodeId(null)
+        setSelectedNodeId(nodeId)
+        setSelectedEdgeId(null)
+        markRecentNode(nodeId)
+        setSearchBlendOverlayWithSelection(true)
+      },
+      [markRecentNode],
+    ),
+  })
+
+  // List preview must not override selection once the dropdown is closed (e.g. Enter / row click).
+  const searchPreviewNodeIdForGraph =
+    searchDropdownOpen && searchResults.length > 0 ? previewNodeId : null
+
   async function handleEdgeTypeChange(nextType: string) {
     if (!selectedEdge || edgeTypeSaving) return
     setEdgeTypeSaving(true)
@@ -208,13 +244,14 @@ export default function Home() {
       await deleteNode({ id: nodeId })
       setNodes((prev) => prev.filter((n) => n.id !== nodeId))
       setEdges((prev) => prev.filter((e) => e.from_id !== nodeId && e.to_id !== nodeId))
+      exitSearchBlendOverlay()
       setSelectedNodeId(null)
       setSelectedEdgeId(null)
       clearNodeHighlightIf(nodeId)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not delete node.')
     }
-  }, [clearNodeHighlightIf])
+  }, [clearNodeHighlightIf, exitSearchBlendOverlay])
 
   useDeleteNodeShortcut(selectedNodeId, handleDeleteNode)
 
@@ -236,22 +273,39 @@ export default function Home() {
         <section className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900 shadow-sm">
           <header className="flex items-center justify-between gap-3 border-b border-slate-800 bg-slate-900 px-5 py-4">
             <h1 className="whitespace-nowrap text-base font-semibold">Weave</h1>
-            <QuickInputBar
-              quickInput={quickInput}
-              setQuickInput={setQuickInput}
-              quickSaving={quickSaving}
-              loading={loading}
-              quickSuggestionsOpen={quickSuggestionsOpen}
-              setQuickSuggestionsOpen={setQuickSuggestionsOpen}
-              activeSuggestionIndex={activeSuggestionIndex}
-              setActiveSuggestionIndex={setActiveSuggestionIndex}
-              quickContext={quickContext}
-              quickSuggestions={quickSuggestions}
-              exactMatchNode={exactMatchNode}
-              quickListboxId={quickListboxId}
-              applyQuickSuggestion={applyQuickSuggestion}
-              handleQuickCreate={handleQuickCreate}
-            />
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <QuickInputBar
+                quickInput={quickInput}
+                setQuickInput={setQuickInput}
+                quickSaving={quickSaving}
+                loading={loading}
+                quickSuggestionsOpen={quickSuggestionsOpen}
+                setQuickSuggestionsOpen={setQuickSuggestionsOpen}
+                activeSuggestionIndex={activeSuggestionIndex}
+                setActiveSuggestionIndex={setActiveSuggestionIndex}
+                quickContext={quickContext}
+                quickSuggestions={quickSuggestions}
+                exactMatchNode={exactMatchNode}
+                quickListboxId={quickListboxId}
+                applyQuickSuggestion={applyQuickSuggestion}
+                handleQuickCreate={handleQuickCreate}
+              />
+              <GraphSearchInput
+                loading={loading}
+                query={searchQuery}
+                onQueryChange={(value) => {
+                  exitSearchBlendOverlay()
+                  setSearchQuery(value)
+                }}
+                results={searchResults}
+                activeIndex={searchActiveIndex}
+                setActiveIndex={setSearchActiveIndex}
+                dropdownOpen={searchDropdownOpen}
+                setDropdownOpen={setSearchDropdownOpen}
+                blurTimerRef={searchBlurTimerRef}
+                onPick={pickSearchResult}
+              />
+            </div>
             <div className="flex gap-2 whitespace-nowrap">
               <Button
                 type="button"
@@ -277,17 +331,20 @@ export default function Home() {
                 hoveredNodeId={hoveredNodeId}
                 focusMode={focusMode}
                 onNodeClick={(nodeId) => {
+                  exitSearchBlendOverlay()
                   setHoveredNodeId(null)
                   setSelectedNodeId(nodeId)
                   setSelectedEdgeId(null)
                   markRecentNode(nodeId)
                 }}
                 onEdgeClick={(edgeId) => {
+                  exitSearchBlendOverlay()
                   setSelectedEdgeId(edgeId)
                   setSelectedNodeId(null)
                   setHoveredNodeId(null)
                 }}
                 onPaneClick={() => {
+                  exitSearchBlendOverlay()
                   setSelectedNodeId(null)
                   setSelectedEdgeId(null)
                   setHoveredNodeId(null)
@@ -295,6 +352,10 @@ export default function Home() {
                 onNodeHover={setHoveredNodeId}
                 onNodeHoverEnd={endNodeHover}
                 height="100%"
+                searchActive={searchActive}
+                searchMatchingNodeIds={searchMatchingNodeIds}
+                searchPreviewNodeId={searchPreviewNodeIdForGraph}
+                searchBlendNonMatchesWithFocusSubgraph={searchBlendOverlayWithSelection}
               />
             )}
           </div>

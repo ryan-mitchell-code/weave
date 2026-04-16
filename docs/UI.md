@@ -11,7 +11,7 @@ This document describes the **frontend user experience** as implemented today: l
 | Area | Behaviour |
 |------|------------|
 | **Layout** | Full-height **Home** view: main graph column plus an optional **right-hand context panel** when a node or edge is selected. |
-| **Header** | App title (**Weave**), **quick command** input (center), **Focus mode** toggle. |
+| **Header** | App title (**Weave**), **quick command** and **search** inputs (shared row), **Focus mode** toggle. |
 | **Errors** | API/load/update failures surface as a **banner** at the top of the page. |
 | **Theme** | Dark, high-contrast workspace (Tailwind + small Radix-based controls). |
 
@@ -20,6 +20,19 @@ This document describes the **frontend user experience** as implemented today: l
 ## 2. Graph canvas
 
 Built with **React Flow**; positions come from **Dagre** (top-to-bottom layering). **Nodes are not draggable**; the graph is read as a structured layout.
+
+### 2.0 Graph search (header field)
+
+**Matching (graph highlight):** While the trimmed query is non-empty, nodes match if **any** of these fields contains the query as a **case-insensitive substring**: **name**, **team**, **tags** (any tag), **notes**.
+
+- **Matching** nodes: full opacity + subtle blue **glow** (`drop-shadow` only — no scale, so layout positions stay fixed).
+- **While typing:** **non-matching** nodes and edges that do **not** touch a matching node use the strict fade (global match highlight).
+- **After choosing someone from the search list** (Enter / row click): the same **focus connected component** as a **direct node click** keeps normal focus opacity and **animated** edges for that subgraph, even when those nodes or internal edges do not match the query; the rest of the graph still uses the strict match fade.
+- Search **layers on top** of the existing graph (layout and focus-mode rules are unchanged).
+
+**Dropdown (top results):** Up to **8** rows, **ranked** by a simple score (sum of category hits, each category at most once): name **+5**, team **+3**, any matching tag **+2**, notes **+1**. Ties break alphabetically by name. Each row shows the **person name** and, when the strongest match is **not** the name alone, a single hint line: **`Team: …`**, **`Tag: …`**, or a short **notes** excerpt (~40 characters, ellipsis).
+
+**Keyboard and preview:** **ArrowDown** / **ArrowUp** move the active row (minimum index **0** while results exist). **Enter** selects the active row (opens the node context panel); the query **stays** in the field. **Escape** clears the active row index and closes the list. Mouse **hover** on a row updates the active row. While the **results dropdown is open**, the graph **preview** uses the same focus-dimming rules as node hover: the **preview anchor** is the **active list row** if any, otherwise the **first** ranked result, then graph **hover**, then **selection** (`searchPreviewNodeId` → `hoveredNodeId` → `selectedNodeId` in `GraphView`). After the list **closes** (pick, Escape, or blur), `searchPreviewNodeId` is not applied, so dimming matches a **direct node click** (**hover**, then **selection**).
 
 ### 2.1 Person nodes
 
@@ -38,7 +51,7 @@ Built with **React Flow**; positions come from **Dagre** (top-to-bottom layering
 | **Hover node** | **Preview focus:** the **connected component** around the hovered node stays full **opacity**; other nodes **fade**. **Edges** in that component stay strong; others **dim**. Does not change click selection. |
 | **Hover leave** | Preview clears after a short delay (~75ms) to reduce flicker when moving between nodes. |
 
-When either **hover** or **selection** defines a focus anchor, **hover takes precedence** for dimming until the pointer leaves or you click (hover is cleared on node click).
+When the **search results list is open** and a preview node is passed to the graph, **search preview** wins for dimming; otherwise **hover** takes precedence over **selection** until the pointer leaves or you click (hover is cleared on node click).
 
 ### 2.3 Focus mode (toggle)
 
@@ -118,12 +131,14 @@ The **context panel** (implementation: `components/home/details`) appears when a
 
 | Path | Role |
 |------|------|
-| `frontend/src/pages/Home.tsx` | Shell, selection state, focus mode, hover preview wiring. |
-| `frontend/src/graph/GraphView.tsx` | React Flow shell, visible graph, hover debounce, viewport center. |
+| `frontend/src/pages/Home.tsx` | Shell, selection state, focus mode, hover preview; composes graph search hook + input. |
+| `frontend/src/components/home/graphSearch/*` | `useGraphSearch` (query, matching IDs, preview id, ranked results) and `GraphSearchInput` (combobox UI). |
+| `frontend/src/lib/graphSearchMatch.ts` | Pure search: field matching, scoring, ranking, match hints for the dropdown. |
+| `frontend/src/graph/GraphView.tsx` | React Flow shell, visible graph, hover debounce, viewport center, search visual overlay. |
 | `frontend/src/graph/dagreLayout.ts` | Dagre node positions. |
 | `frontend/src/graph/focusSets.ts` | Connected-component focus for dimming. |
 | `frontend/src/graph/buildFlowEdges.ts` | React Flow edge payloads (stroke, labels, animation). |
-| `frontend/src/graph/viewConstants.ts` | Shared focus/hover timing constants. |
+| `frontend/src/graph/viewConstants.ts` | Shared focus/hover timing and search-overlay opacity/glow constants. |
 | `frontend/src/graph/PersonNode.tsx` | Person card rendering and selection ring. |
 | `frontend/src/graph/CustomEdge.tsx` | Edge geometry. |
 | `frontend/src/graph/graphTheme.ts` | Layout spacing and shared edge/node tokens. |
@@ -133,6 +148,6 @@ The **context panel** (implementation: `components/home/details`) appears when a
 | `frontend/src/components/home/quickInputDerived.ts` | Pure derived UI flags (viewing / create / panel visibility). |
 | `frontend/src/components/home/quickInputBarKeyboard.ts` | Key handling for the command field. |
 | `frontend/src/components/home/details/*` | Context panel sections. |
-| `frontend/src/pages/home/*` | Quick command hook, `quickInputLogic`, `quickCommandExecute`, labels, shortcuts. |
+| `frontend/src/pages/home/*` | Quick command hook, `quickInputLogic`, `quickCommandExecute`, labels, shortcuts, shared constants. |
 | `frontend/src/lib/normalizeTags.ts` | Tag list trim/dedup before persist (matches API normalization). |
 | `frontend/src/index.css` | Global base styles; **flow** keyframes for edges. |

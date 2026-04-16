@@ -26,6 +26,9 @@ import {
   FOCUS_INACTIVE_NODE_OPACITY,
   HOVER_LEAVE_MS,
   NODE_OPACITY_TRANSITION,
+  SEARCH_MATCH_NODE_GLOW,
+  SEARCH_NONMATCH_EDGE_OPACITY,
+  SEARCH_NONMATCH_NODE_OPACITY,
 } from './viewConstants'
 import { formatDisplayName } from '../lib/displayFormat'
 import { getTeamDisplay } from './team'
@@ -42,8 +45,10 @@ export interface GraphViewProps {
   selectedEdgeId?: string | null
   highlightedNodeId?: string | null
   highlightedEdgeId?: string | null
-  /** Preview focus while hovering (takes precedence over selection for dimming only). */
+  /** Preview focus while hovering (for dimming only). */
   hoveredNodeId?: string | null
+  /** Drives focus dimming before graph hover and selection (search list / default first hit). */
+  searchPreviewNodeId?: string | null
   focusMode?: boolean
   onNodeClick?: (nodeId: string) => void
   onEdgeClick?: (edgeId: string) => void
@@ -51,6 +56,15 @@ export interface GraphViewProps {
   onNodeHover?: (nodeId: string) => void
   onNodeHoverEnd?: () => void
   height?: number | string
+  /** Search overlay: when true, matching nodes are emphasized; others faded (see `searchMatchingNodeIds`). */
+  searchActive?: boolean
+  searchMatchingNodeIds?: Set<string> | null
+  /**
+   * When true (e.g. user chose a row from the search list), non-matches inside the same
+   * hover/selection connected component keep focus styling. When false (typing), use strict
+   * match-only fading across the graph.
+   */
+  searchBlendNonMatchesWithFocusSubgraph?: boolean
 }
 
 export function GraphView({
@@ -61,6 +75,7 @@ export function GraphView({
   highlightedNodeId = null,
   highlightedEdgeId = null,
   hoveredNodeId = null,
+  searchPreviewNodeId = null,
   focusMode = false,
   onNodeClick,
   onEdgeClick,
@@ -68,6 +83,9 @@ export function GraphView({
   onNodeHover,
   onNodeHoverEnd,
   height = 420,
+  searchActive = false,
+  searchMatchingNodeIds = null,
+  searchBlendNonMatchesWithFocusSubgraph = false,
 }: GraphViewProps) {
   const hoverLeaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -120,7 +138,7 @@ export function GraphView({
     }
   }, [nodes, edges, focusMode, selectedNodeId])
 
-  const focusNodeId = hoveredNodeId ?? selectedNodeId
+  const focusNodeId = searchPreviewNodeId ?? hoveredNodeId ?? selectedNodeId
 
   const { activeNodeIds, activeEdgeIds } = useMemo(
     () => computeFocusSets(visibleGraph.nodes, visibleGraph.edges, focusNodeId),
@@ -146,10 +164,25 @@ export function GraphView({
         selected: node.id === selectedNodeId,
         sourcePosition: Position.Bottom,
         targetPosition: Position.Top,
-        style: {
-          opacity: hasNodeFocus ? (isActive ? 1 : FOCUS_INACTIVE_NODE_OPACITY) : 1,
-          transition: NODE_OPACITY_TRANSITION,
-        },
+        style: (() => {
+          let opacity = hasNodeFocus ? (isActive ? 1 : FOCUS_INACTIVE_NODE_OPACITY) : 1
+          let filter: string | undefined
+
+          if (searchActive && searchMatchingNodeIds) {
+            if (searchMatchingNodeIds.has(node.id)) {
+              opacity = 1
+              filter = SEARCH_MATCH_NODE_GLOW
+            } else if (!searchBlendNonMatchesWithFocusSubgraph || !isActive) {
+              opacity = SEARCH_NONMATCH_NODE_OPACITY
+            }
+          }
+
+          return {
+            opacity,
+            transition: `${NODE_OPACITY_TRANSITION}, filter 0.15s ease`,
+            ...(filter ? { filter } : {}),
+          }
+        })(),
       }
     })
   }, [
@@ -158,6 +191,9 @@ export function GraphView({
     highlightedNodeId,
     activeNodeIds,
     hasNodeFocus,
+    searchActive,
+    searchMatchingNodeIds,
+    searchBlendNonMatchesWithFocusSubgraph,
   ])
 
   const flowEdges = useMemo(
@@ -168,12 +204,32 @@ export function GraphView({
         activeEdgeIds,
         highlightedEdgeId,
       ).map((edge) => {
-        if (edge.id !== selectedEdgeId) return edge
+        let next = edge
+
+        if (searchActive && searchMatchingNodeIds) {
+          const touchesMatch =
+            searchMatchingNodeIds.has(edge.source) || searchMatchingNodeIds.has(edge.target)
+          const inFocusComponent = activeEdgeIds.has(edge.id)
+          const prevStyle = edge.style as { opacity?: number } | undefined
+          const baseOp = Number(prevStyle?.opacity ?? 1)
+          const keepFocusOpacity =
+            touchesMatch ||
+            (searchBlendNonMatchesWithFocusSubgraph && inFocusComponent)
+          next = {
+            ...edge,
+            style: {
+              ...edge.style,
+              opacity: keepFocusOpacity ? baseOp : SEARCH_NONMATCH_EDGE_OPACITY,
+            },
+          }
+        }
+
+        if (next.id !== selectedEdgeId) return next
         const style =
-          (edge.style as { strokeWidth?: number; opacity?: number; stroke?: string } | undefined) ??
+          (next.style as { strokeWidth?: number; opacity?: number; stroke?: string } | undefined) ??
           {}
         return {
-          ...edge,
+          ...next,
           style: {
             ...style,
             opacity: 1,
@@ -182,7 +238,16 @@ export function GraphView({
           zIndex: 9998,
         }
       }),
-    [visibleGraph.edges, hasNodeFocus, activeEdgeIds, highlightedEdgeId, selectedEdgeId],
+    [
+      visibleGraph.edges,
+      hasNodeFocus,
+      activeEdgeIds,
+      highlightedEdgeId,
+      selectedEdgeId,
+      searchActive,
+      searchMatchingNodeIds,
+      searchBlendNonMatchesWithFocusSubgraph,
+    ],
   )
 
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState(flowNodes)
