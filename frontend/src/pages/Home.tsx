@@ -120,6 +120,7 @@ export default function Home() {
     setActiveSuggestionIndex,
     quickContext,
     quickSuggestions,
+    exactMatchNode,
     quickListboxId,
     applyQuickSuggestion,
     handleQuickCreate,
@@ -246,6 +247,7 @@ export default function Home() {
               setActiveSuggestionIndex={setActiveSuggestionIndex}
               quickContext={quickContext}
               quickSuggestions={quickSuggestions}
+              exactMatchNode={exactMatchNode}
               quickListboxId={quickListboxId}
               applyQuickSuggestion={applyQuickSuggestion}
               handleQuickCreate={handleQuickCreate}

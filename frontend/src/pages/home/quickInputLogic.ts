@@ -53,6 +53,16 @@ export function findNodeByName(nodes: Node[], rawName: string): Node | undefined
   return nodes.find((n) => n.name.trim().toLowerCase() === q)
 }
 
+/** Full-string name match in node (non-edge) quick input; used for viewing vs create UX. */
+export function getExactNodeMatchForQuickInput(
+  nodes: Node[],
+  quickContext: QuickContext,
+): Node | undefined {
+  if (quickContext.mode !== 'node') return undefined
+  if (!quickContext.trimmed) return undefined
+  return findNodeByName(nodes, quickContext.trimmed)
+}
+
 export function rankSuggestedNodes(
   list: Node[],
   query: string,

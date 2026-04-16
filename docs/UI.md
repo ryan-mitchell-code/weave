@@ -80,9 +80,12 @@ Single field for fast graph edits without opening the context panel for every ch
 | **Add person** | `Name` or `Name TeamName` (team as remaining words). |
 | **Add edge** | `a -> b`, `a to b`, or two **known** names as tokens; optional **edge type** (e.g. suffix or `right -> type`). |
 | **Suggestions** | Filtered list of people while typing; **keyboard**: ArrowUp/Down, Enter to pick a suggestion. |
+| **Search vs create** | **Case-insensitive** full-name match: shows **Viewing {name}** (no create row); changing the typed value to a **non-matching** string shows **Create "{input}"** — **primary** when there are no other matches, **secondary** (below suggestions) when partial matches exist. Edge syntax (`->` / `to`) unchanged. |
 | **Tab** | With suggestions or the **Add relationship (`->`)** helper open: **first Tab** can **complete** the highlighted person name; when that helper is shown, a **second Tab** inserts ` -> ` so you can type the other person without leaving the field. |
-| **Enter** | Commits the quick command; **focus stays** in the command field after a successful action. |
+| **Enter** | With a **listed suggestion** focused: applies it. With an **exact existing name** in the field (node mode): **no-op** (no duplicate create). Otherwise: **create** or **edge** per the typed command; **focus stays** in the field after a successful action. |
 | **Loading** | Input disabled while graph is loading or a quick action is in flight. |
+
+When the trimmed input **exactly matches** a person’s name, the graph **selection** updates to that person as you **type** (so the view can center on them). Clicking another node or the pane is not overwritten until you **change** the command text.
 
 Successful creates **flash** the new node or edge on the graph and may **update selection** for visibility.
 

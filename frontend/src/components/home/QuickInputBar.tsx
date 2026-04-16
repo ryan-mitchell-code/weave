@@ -16,6 +16,7 @@ type QuickInputBarProps = {
   setActiveSuggestionIndex: (index: number | ((prev: number) => number)) => void
   quickContext: QuickContext
   quickSuggestions: Node[]
+  exactMatchNode: Node | undefined
   quickListboxId: string
   applyQuickSuggestion: (nodeName: string) => void
   handleQuickCreate: () => void | Promise<void>
@@ -32,6 +33,7 @@ export function QuickInputBar({
   setActiveSuggestionIndex,
   quickContext,
   quickSuggestions,
+  exactMatchNode,
   quickListboxId,
   applyQuickSuggestion,
   handleQuickCreate,
@@ -54,6 +56,16 @@ export function QuickInputBar({
     !trimmedQuickInput.includes('->')
   const hasNodeSuggestions = quickSuggestions.length > 0
   const hasAnyQuickOption = hasNodeSuggestions || showArrowSuggestion
+  const showViewingHint =
+    quickContext.mode === 'node' && exactMatchNode !== undefined
+  const showCreateRow =
+    quickContext.mode === 'node' && trimmedQuickInput !== '' && !exactMatchNode
+  const createRowSecondary = hasNodeSuggestions
+  const showQuickPanel =
+    showViewingHint ||
+    hasNodeSuggestions ||
+    showArrowSuggestion ||
+    showCreateRow
 
   function applyArrowSuggestion() {
     setQuickInput(`${trimmedQuickInput} -> `)
@@ -70,9 +82,7 @@ export function QuickInputBar({
         value={quickInput}
         role="combobox"
         aria-expanded={
-          quickSuggestionsOpen &&
-          trimmedQuickInput !== '' &&
-          (quickSuggestions.length > 0 || showArrowSuggestion)
+          quickSuggestionsOpen && trimmedQuickInput !== '' && showQuickPanel
         }
         aria-controls={quickListboxId}
         aria-activedescendant={
@@ -140,6 +150,10 @@ export function QuickInputBar({
             }
           } else if (e.key === 'Enter') {
             e.preventDefault()
+            if (quickContext.mode === 'node' && exactMatchNode) {
+              refocusInputSoon()
+              return
+            }
             Promise.resolve(handleQuickCreate()).finally(() => {
               refocusInputSoon()
             })
@@ -152,53 +166,70 @@ export function QuickInputBar({
         disabled={quickSaving || loading}
         className="w-full"
       />
-      {quickSuggestionsOpen &&
-        quickInput.trim() !== '' &&
-        (quickSuggestions.length > 0 || showArrowSuggestion) && (
-          <div
-            id={quickListboxId}
-            role="listbox"
-            className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 shadow-lg"
-          >
-            {showArrowSuggestion && (
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={applyArrowSuggestion}
-                className="block w-full cursor-pointer border-none bg-transparent px-2.5 py-2 text-left text-xs text-slate-300 hover:bg-slate-700"
-              >
-                Add relationship: <span className="font-semibold text-slate-100">-&gt;</span>
-              </button>
-            )}
-            {quickContext.mode === 'edge' && (
-              <div className="border-b border-slate-700 px-2.5 py-1.5 text-xs text-slate-400">
-                Suggested nodes
-              </div>
-            )}
-            {quickSuggestions.map((n, idx) => (
-              <button
-                key={n.id}
-                id={`${quickListboxId}-${n.id}`}
-                role="option"
-                aria-selected={idx === activeSuggestionIndex}
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onMouseEnter={() => setActiveSuggestionIndex(idx)}
-                onClick={() => applyQuickSuggestion(n.name)}
-                className={`block w-full cursor-pointer border-none bg-transparent px-2.5 py-2 text-left hover:bg-slate-700 ${
-                  idx === activeSuggestionIndex ? 'bg-slate-700' : ''
-                }`}
-              >
-                <div className="text-sm">{formatDisplayName(n.name)}</div>
-                {n.team?.trim() && (
-                  <div className="text-xs text-slate-400">
-                    {getTeamDisplay({ team: n.team })}
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
+      {quickSuggestionsOpen && quickInput.trim() !== '' && showQuickPanel && (
+        <div
+          id={quickListboxId}
+          role="listbox"
+          className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 shadow-lg"
+        >
+          {showViewingHint && exactMatchNode && (
+            <div className="border-b border-slate-700/80 px-2.5 py-2 text-xs text-slate-400">
+              Viewing {formatDisplayName(exactMatchNode.name)}
+            </div>
+          )}
+          {showArrowSuggestion && (
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={applyArrowSuggestion}
+              className="block w-full cursor-pointer border-none bg-transparent px-2.5 py-2 text-left text-xs text-slate-300 hover:bg-slate-700"
+            >
+              Add relationship: <span className="font-semibold text-slate-100">-&gt;</span>
+            </button>
+          )}
+          {quickContext.mode === 'edge' && (
+            <div className="border-b border-slate-700 px-2.5 py-1.5 text-xs text-slate-400">
+              Suggested nodes
+            </div>
+          )}
+          {quickSuggestions.map((n, idx) => (
+            <button
+              key={n.id}
+              id={`${quickListboxId}-${n.id}`}
+              role="option"
+              aria-selected={idx === activeSuggestionIndex}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onMouseEnter={() => setActiveSuggestionIndex(idx)}
+              onClick={() => applyQuickSuggestion(n.name)}
+              className={`block w-full cursor-pointer border-none bg-transparent px-2.5 py-2 text-left hover:bg-slate-700 ${
+                idx === activeSuggestionIndex ? 'bg-slate-700' : ''
+              }`}
+            >
+              <div className="text-sm">{formatDisplayName(n.name)}</div>
+              {n.team?.trim() && (
+                <div className="text-xs text-slate-400">
+                  {getTeamDisplay({ team: n.team })}
+                </div>
+              )}
+            </button>
+          ))}
+          {showCreateRow && (
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                Promise.resolve(handleQuickCreate()).finally(() => refocusInputSoon())
+              }}
+              className={`block w-full cursor-pointer border-none bg-transparent px-2.5 py-2 text-left hover:bg-slate-700 ${
+                createRowSecondary ? 'border-t border-slate-700 text-xs text-slate-400' : 'text-sm text-slate-100'
+              }`}
+            >
+              Create &quot;{trimmedQuickInput}&quot;
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

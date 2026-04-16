@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import { createEdge, createNode, type Edge, type Node } from '../../api/client'
 import { formatDisplayName } from '../../lib/displayFormat'
@@ -6,6 +6,7 @@ import { EDGE_TYPE_OPTIONS } from './constants'
 import {
   buildQuickSuggestions,
   findNodeByName,
+  getExactNodeMatchForQuickInput,
   parseQuickContext,
 } from './quickInputLogic'
 
@@ -39,6 +40,7 @@ export function useQuickCommand({
   const [recentNodeIds, setRecentNodeIds] = useState<string[]>([])
   const [quickSuggestionsOpen, setQuickSuggestionsOpen] = useState(false)
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
+  const prevQuickTrimmedRef = useRef<string | null>(null)
 
   const markRecent = useCallback((nodeId: string) => {
     setRecentNodeIds((prev) => [nodeId, ...prev.filter((id) => id !== nodeId)].slice(0, 10))
@@ -61,10 +63,41 @@ export function useQuickCommand({
 
   const quickContext = useMemo(() => parseQuickContext(quickInput), [quickInput])
 
-  const quickSuggestions = useMemo(
+  const builtQuickSuggestions = useMemo(
     () => buildQuickSuggestions(nodes, quickContext, recentNodeIds),
     [nodes, quickContext, recentNodeIds],
   )
+
+  const exactMatchNode = useMemo(
+    () => getExactNodeMatchForQuickInput(nodes, quickContext),
+    [nodes, quickContext],
+  )
+
+  const quickSuggestions = useMemo(() => {
+    if (!exactMatchNode) return builtQuickSuggestions
+    return builtQuickSuggestions.filter((n) => n.id !== exactMatchNode.id)
+  }, [builtQuickSuggestions, exactMatchNode])
+
+  useEffect(() => {
+    const trimmed = quickContext.trimmed
+    if (quickContext.mode !== 'node') {
+      prevQuickTrimmedRef.current = trimmed
+      return
+    }
+    const trimChanged = prevQuickTrimmedRef.current !== trimmed
+    prevQuickTrimmedRef.current = trimmed
+    if (!trimChanged || !exactMatchNode) return
+    setSelectedNodeId(exactMatchNode.id)
+    setSelectedEdgeId(null)
+    markRecent(exactMatchNode.id)
+  }, [
+    exactMatchNode,
+    quickContext.mode,
+    quickContext.trimmed,
+    markRecent,
+    setSelectedEdgeId,
+    setSelectedNodeId,
+  ])
 
   useEffect(() => {
     if (!quickSuggestionsOpen || quickSuggestions.length === 0) {
@@ -93,6 +126,10 @@ export function useQuickCommand({
   const handleQuickCreate = useCallback(async () => {
     const raw = quickInput.trim()
     if (!raw || quickSaving || loading) return
+    const parsed = parseQuickContext(quickInput)
+    if (parsed.mode === 'node' && parsed.trimmed && findNodeByName(nodes, parsed.trimmed)) {
+      return
+    }
     setError(null)
     setQuickSaving(true)
     try {
@@ -202,6 +239,7 @@ export function useQuickCommand({
     setActiveSuggestionIndex,
     quickContext,
     quickSuggestions,
+    exactMatchNode,
     quickListboxId: QUICK_LISTBOX_ID,
     applyQuickSuggestion,
     handleQuickCreate,
