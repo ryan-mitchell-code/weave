@@ -111,7 +111,7 @@ The **context panel** (implementation: `components/home/details`) appears when a
 ### Node
 
 - Edit **name** and **team** (pill-style inputs); **save on blur** or **Enter**; focus **stays** in the field (no jump to another control).
-- Edit **notes** inline (click-to-edit, autosave on blur / Cmd+Enter, Escape to cancel).
+- Edit **notes** as a lightweight **line-based scratchpad**: one idea per line, click a line to edit, `+ Add note` for quick append, Enter/blur to save, and clear a line to delete it.
 - Edit **tags** inline (pill list, `+ Add tag`, Enter create, Backspace remove-last, `×` remove).
 - **Delete node** (button).
 - **Connections** list with formatted labels and edge types.
@@ -148,6 +148,7 @@ The **context panel** (implementation: `components/home/details`) appears when a
 | `frontend/src/components/home/quickInputDerived.ts` | Pure derived UI flags (viewing / create / panel visibility). |
 | `frontend/src/components/home/quickInputBarKeyboard.ts` | Key handling for the command field. |
 | `frontend/src/components/home/details/*` | Context panel sections. |
+| `frontend/src/components/home/details/NotesInlineEditor.tsx` | Notes scratchpad UI (line list add/edit/delete) persisted as newline-delimited `notes` text. |
 | `frontend/src/pages/home/*` | Quick command hook, `quickInputLogic`, `quickCommandExecute`, labels, shortcuts, shared constants. |
 | `frontend/src/lib/normalizeTags.ts` | Tag list trim/dedup before persist (matches API normalization). |
 | `frontend/src/index.css` | Global base styles; **flow** keyframes for edges. |

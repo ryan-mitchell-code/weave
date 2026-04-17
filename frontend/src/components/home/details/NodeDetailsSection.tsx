@@ -86,7 +86,6 @@ export function NodeDetailsSection({
         <div className="space-y-1">
           <InspectorLabel>Notes</InspectorLabel>
           <NotesInlineEditor
-            savedNotes={selectedNode.notes ?? ''}
             draftNotes={nodeNotesDraft}
             saving={nodeSaving}
             onDraftChange={onNodeNotesChange}
