@@ -127,3 +127,16 @@ export async function updateEdgeType(input: UpdateEdgeTypeInput): Promise<Edge> 
   })
   return parseJson<Edge>(res)
 }
+
+export interface DeleteEdgeInput {
+  id: string
+}
+
+export async function deleteEdge(input: DeleteEdgeInput): Promise<Edge> {
+  const res = await fetch(`${baseUrl}/edges`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: input.id }),
+  })
+  return parseJson<Edge>(res)
+}

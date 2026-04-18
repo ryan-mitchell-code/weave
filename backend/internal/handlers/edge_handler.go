@@ -92,3 +92,33 @@ func UpdateEdgeType(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, updated)
 }
+
+type deleteEdgeRequest struct {
+	ID string `json:"id"`
+}
+
+func DeleteEdge(w http.ResponseWriter, r *http.Request) {
+	var req deleteEdgeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	req.ID = strings.TrimSpace(req.ID)
+	if req.ID == "" {
+		writeError(w, http.StatusBadRequest, "id is required")
+		return
+	}
+
+	deleted, err := store.DeleteEdge(req.ID)
+	if err != nil {
+		if errors.Is(err, store.ErrEdgeNotFound) {
+			writeError(w, http.StatusNotFound, "edge not found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, deleted)
+}

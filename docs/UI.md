@@ -83,7 +83,7 @@ With **no** focus anchor, edges use the default calm styling (no global marching
 
 ### 2.6 Keyboard
 
-- **Delete:** Deletes the **selected node** when focus is not inside a text field (input/textarea/select). Graph and API update accordingly; selection clears if the node is removed.
+- **Delete:** Deletes the **current selection** when focus is not inside a text field (input/textarea/select) or contenteditable region. If a **node** is selected it is removed along with any incident edges; otherwise the **selected edge** is removed. Graph and API update accordingly; selection clears after a successful delete.
 
 ---
 
@@ -125,6 +125,7 @@ The **context panel** (implementation: `components/home/details`) appears when a
 
 - Change **relationship type** (dropdown / select aligned with API types).
 - Context for **source** and **target** nodes where applicable.
+- **Delete edge** — same two-step confirm button as the node panel (first click arms, second click within ~3s deletes). Only the edge is removed; both endpoint nodes remain.
 
 **Note:** Current tags are intentionally lightweight (no autocomplete/dropdowns yet); richer tag workflows remain future work.
 
@@ -136,7 +137,9 @@ The **context panel** (implementation: `components/home/details`) appears when a
 |------|------|
 | `frontend/src/pages/Home.tsx` | Shell, selection state, focus mode, hover preview; composes graph search hook + input. |
 | `frontend/src/pages/home/useNodeDraft.ts` | Drafts + persist for the selected node (name/team/notes/tags) with dirty-check and error surfacing. |
+| `frontend/src/pages/home/useDeleteSelectionShortcut.ts` | Binds the Delete key to the current selection (node or edge) when focus is outside text fields. |
 | `frontend/src/components/common/ErrorBanner.tsx` | Dismissible top-of-page error banner. |
+| `frontend/src/components/common/ConfirmDeleteButton.tsx` | Two-step confirm delete button primitive reused by node and edge details. |
 | `frontend/src/components/home/GraphCanvasPlaceholder.tsx` | Loading / empty state placeholder for the graph canvas. |
 | `frontend/src/components/home/graphSearch/*` | `useGraphSearch` (query, matching IDs, preview id, ranked results) and `GraphSearchInput` (combobox UI; owns its own dropdown-open + blur debounce). |
 | `frontend/src/lib/graphSearchMatch.ts` | Pure search: field matching, scoring, ranking, match hints for the dropdown. |

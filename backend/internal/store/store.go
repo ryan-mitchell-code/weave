@@ -91,6 +91,22 @@ func AddEdge(e models.Edge) error {
 	return nil
 }
 
+func DeleteEdge(id string) (models.Edge, error) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	for i := range Edges {
+		if Edges[i].ID != id {
+			continue
+		}
+		deleted := Edges[i]
+		Edges = append(Edges[:i], Edges[i+1:]...)
+		return deleted, nil
+	}
+
+	return models.Edge{}, ErrEdgeNotFound
+}
+
 func UpdateEdgeType(id, edgeType string) (models.Edge, error) {
 	mu.Lock()
 	defer mu.Unlock()

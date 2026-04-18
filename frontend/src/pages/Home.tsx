@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+  deleteEdge,
   deleteNode,
   fetchGraph,
   updateEdgeType,
@@ -15,7 +16,7 @@ import { GraphSearchInput, useGraphSearch } from '../components/home/graphSearch
 import { DetailsPanel } from '../components/home/details/DetailsPanel'
 import { EDGE_TYPE_OPTIONS } from './home/constants'
 import { formatNodeLabel } from './home/labels'
-import { useDeleteNodeShortcut } from './home/useDeleteNodeShortcut'
+import { useDeleteSelectionShortcut } from './home/useDeleteSelectionShortcut'
 import { useHighlightFlash } from './home/useHighlightFlash'
 import { useNodeDraft } from './home/useNodeDraft'
 import { useQuickCommand } from './home/useQuickCommand'
@@ -219,7 +220,26 @@ export default function Home() {
     [clearNodeHighlightIf, exitSearchBlendOverlay],
   )
 
-  useDeleteNodeShortcut(selectedNodeId, handleDeleteNode)
+  const handleDeleteEdge = useCallback(
+    async (edgeId: string) => {
+      setError(null)
+      try {
+        await deleteEdge({ id: edgeId })
+        setEdges((prev) => prev.filter((e) => e.id !== edgeId))
+        setSelectedEdgeId(null)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not delete edge.')
+      }
+    },
+    [],
+  )
+
+  useDeleteSelectionShortcut({
+    selectedNodeId,
+    selectedEdgeId,
+    onDeleteNode: handleDeleteNode,
+    onDeleteEdge: handleDeleteEdge,
+  })
 
   const endNodeHover = useCallback(() => setHoveredNodeId(null), [])
   const nodeLabel = useCallback((id: string) => formatNodeLabel(nodes, id), [nodes])
@@ -345,6 +365,9 @@ export default function Home() {
             }}
             onEdgeTypeChange={(nextType) => {
               void handleEdgeTypeChange(nextType)
+            }}
+            onDeleteEdge={(edgeId) => {
+              void handleDeleteEdge(edgeId)
             }}
           />
         )}

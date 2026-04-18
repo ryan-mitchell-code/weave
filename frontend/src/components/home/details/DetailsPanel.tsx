@@ -21,6 +21,7 @@ type DetailsPanelProps = {
   onPersistNode: (name: string, team: string, notes: string, tags: string[]) => void
   onDeleteNode: (nodeId: string) => void
   onEdgeTypeChange: (nextType: string) => void
+  onDeleteEdge: (edgeId: string) => void
 }
 
 export function DetailsPanel({
@@ -42,6 +43,7 @@ export function DetailsPanel({
   onPersistNode,
   onDeleteNode,
   onEdgeTypeChange,
+  onDeleteEdge,
 }: DetailsPanelProps) {
   return (
     <aside
@@ -54,11 +56,13 @@ export function DetailsPanel({
         </h2>
         {selectedEdge && (
           <EdgeDetailsSection
+            key={selectedEdge.id}
             selectedEdge={selectedEdge}
             edgeTypeSaving={edgeTypeSaving}
             edgeTypeOptions={edgeTypeOptions}
             nodeLabel={nodeLabel}
             onEdgeTypeChange={onEdgeTypeChange}
+            onDeleteEdge={onDeleteEdge}
           />
         )}
         {selectedNode && (

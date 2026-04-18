@@ -39,6 +39,8 @@ func main() {
 			handlers.CreateEdge(w, r)
 		case http.MethodPatch:
 			handlers.UpdateEdgeType(w, r)
+		case http.MethodDelete:
+			handlers.DeleteEdge(w, r)
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
