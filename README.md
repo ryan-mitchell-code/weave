@@ -29,17 +29,21 @@ Details: **[docs/UI.md](docs/UI.md)**.
 
 ## Local development
 
-1. **Environment** — At the repo root, copy **`.env.example`** to **`.env`**, then set **`POSTGRES_PASSWORD`** (and align **`DATABASE_URL`** if you change user, password, host, port, or database name). Variables are documented in **`.env.example`**; do not commit **`.env`**. The API loads **`.env`** on startup: **`./.env`** if present, otherwise **`../.env`** (so `cd backend && go run ./cmd/api` picks up the repo-root file). Already-exported shell variables are not overwritten. Docker Compose still reads **`.env`** for the database container.
-2. **`WEAVE_MODE`** — Set **`WEAVE_MODE=persist`** in **`.env`** so the backend uses **`DATABASE_URL`** and the **Postgres** store (tables are created on startup). Omit it or use any other value for the **in-memory** store.
-3. **Database** — Start Postgres with Docker Compose from the repo root:
+1. **Environment files** — Copy **`.env.example`** to **`.env`** at the repo root for **Docker Compose** (Postgres credentials) and as a reference for values. Do not commit **`.env`**. The **Go API does not read `.env` files**; it only sees real process environment variables (`os.Getenv`). For Postgres mode, export what you need before starting the server, for example:
+   ```bash
+   export WEAVE_MODE=persist
+   export DATABASE_URL='postgres://postgres:…@localhost:5432/weave?sslmode=disable'
+   ```
+   You can also use **`direnv`**, a **`make`** target, or `set -a && source .env && set +a` in your shell to load **`.env`** into the environment. Omit **`WEAVE_MODE`** (or set it to anything other than **`persist`**) to use the **in-memory** store.
+2. **Database** — Start Postgres with Docker Compose from the repo root:
 
    ```bash
    docker compose up -d
    ```
 
    Stop, reset, and `psql` access: **[docs/DEV_DATABASE.md](docs/DEV_DATABASE.md)**.
-4. **Backend** — Run the API (see **How to run (development)** below): `cd backend && go run ./cmd/api`.
-5. **Frontend** — Same section: `cd frontend && npm install && npm run dev`.
+3. **Backend** — Run the API (see **How to run (development)** below): `cd backend && go run ./cmd/api`.
+4. **Frontend** — Same section: `cd frontend && npm install && npm run dev`.
 
 ---
 
