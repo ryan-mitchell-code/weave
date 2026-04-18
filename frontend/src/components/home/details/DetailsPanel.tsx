@@ -14,7 +14,6 @@ type DetailsPanelProps = {
   connectedEdges: Edge[]
   edgeTypeOptions: string[]
   nodeLabel: (id: string) => string
-  formatEdgeTypeLabel: (type: string) => string
   onNodeNameChange: (value: string) => void
   onNodeTeamChange: (value: string) => void
   onNodeNotesChange: (value: string) => void
@@ -36,7 +35,6 @@ export function DetailsPanel({
   connectedEdges,
   edgeTypeOptions,
   nodeLabel,
-  formatEdgeTypeLabel,
   onNodeNameChange,
   onNodeTeamChange,
   onNodeNotesChange,
@@ -46,7 +44,10 @@ export function DetailsPanel({
   onEdgeTypeChange,
 }: DetailsPanelProps) {
   return (
-    <div className="w-[300px] overflow-auto rounded-xl border-l border-slate-800 bg-slate-900 p-6 shadow-sm">
+    <aside
+      aria-labelledby="inspect-heading"
+      className="w-[300px] shrink-0 overflow-auto rounded-xl border-l border-slate-800 bg-slate-900 p-6 shadow-sm"
+    >
       <div className="space-y-4">
         <h2 id="inspect-heading" className="text-sm font-semibold text-slate-100">
           Details
@@ -57,7 +58,6 @@ export function DetailsPanel({
             edgeTypeSaving={edgeTypeSaving}
             edgeTypeOptions={edgeTypeOptions}
             nodeLabel={nodeLabel}
-            formatEdgeTypeLabel={formatEdgeTypeLabel}
             onEdgeTypeChange={onEdgeTypeChange}
           />
         )}
@@ -72,7 +72,6 @@ export function DetailsPanel({
             nodeSaving={nodeSaving}
             connectedEdges={connectedEdges}
             nodeLabel={nodeLabel}
-            formatEdgeTypeLabel={formatEdgeTypeLabel}
             onNodeNameChange={onNodeNameChange}
             onNodeTeamChange={onNodeTeamChange}
             onNodeNotesChange={onNodeNotesChange}
@@ -82,6 +81,6 @@ export function DetailsPanel({
           />
         )}
       </div>
-    </div>
+    </aside>
   )
 }

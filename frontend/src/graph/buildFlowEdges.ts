@@ -1,15 +1,11 @@
 import { MarkerType } from 'reactflow'
 import type { Edge } from '../api/client'
+import { formatEdgeTypeLabel } from '../pages/home/labels'
 import { GRAPH_THEME } from './graphTheme'
 
 const FOCUS_INACTIVE_EDGE_OPACITY = 0.15
 const FOCUS_ACTIVE_EDGE_STROKE = 2.75
 const OPACITY_TRANSITION = 'opacity 0.15s ease'
-
-function formatKindLabel(kind: string): string {
-  const spaced = kind.replace(/_/g, ' ')
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
-}
 
 function edgeStrokeForType(relType: string): string {
   switch (relType) {
@@ -65,7 +61,7 @@ function buildFlowEdges(
       target: edge.to_id,
       type: 'custom',
       data: { offset },
-      label: formatKindLabel(edge.type),
+      label: formatEdgeTypeLabel(edge.type),
       style: {
         stroke,
         strokeWidth,

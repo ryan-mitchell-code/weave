@@ -41,30 +41,3 @@ export const GRAPH_THEME = {
     marginy: 24,
   },
 } as const
-
-export const TEAM_PALETTES = [
-  {
-    bg: GRAPH_THEME.node.baseBackground,
-    border: '#16a34a',
-    text: '#dcfce7',
-    handle: '#22c55e',
-  },
-  {
-    bg: GRAPH_THEME.node.baseBackground,
-    border: '#0284c7',
-    text: '#e0f2fe',
-    handle: '#38bdf8',
-  },
-  {
-    bg: GRAPH_THEME.node.baseBackground,
-    border: '#ca8a04',
-    text: '#fef3c7',
-    handle: '#f59e0b',
-  },
-  {
-    bg: GRAPH_THEME.node.baseBackground,
-    border: '#9333ea',
-    text: '#f3e8ff',
-    handle: '#a855f7',
-  },
-] as const

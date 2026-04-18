@@ -1,6 +1,9 @@
-import type { KeyboardEvent, MutableRefObject } from 'react'
+import type { KeyboardEvent } from 'react'
 import type { Node } from '../../api/client'
 import type { QuickContext } from '../../pages/home/quickInputLogic'
+
+/** Minimal structural shape of a mutable ref cell. Works across React 18 / 19 types. */
+type MutableCell<T> = { current: T }
 
 export type QuickInputBarKeyContext = {
   quickInput: string
@@ -17,7 +20,7 @@ export type QuickInputBarKeyContext = {
   applyQuickSuggestion: (nodeName: string) => void
   applyArrowSuggestion: () => void
   handleQuickCreate: () => void | Promise<void>
-  nameCompletedForArrowRef: MutableRefObject<boolean>
+  nameCompletedForArrowRef: MutableCell<boolean>
   refocusInputSoon: () => void
 }
 

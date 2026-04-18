@@ -1,4 +1,5 @@
 import type { Edge } from '../../../api/client'
+import { formatEdgeTypeLabel } from '../../../pages/home/labels'
 import {
   Select,
   SelectContent,
@@ -13,7 +14,6 @@ export type EdgeDetailsSectionProps = {
   edgeTypeSaving: boolean
   edgeTypeOptions: string[]
   nodeLabel: (id: string) => string
-  formatEdgeTypeLabel: (type: string) => string
   onEdgeTypeChange: (nextType: string) => void
 }
 
@@ -22,7 +22,6 @@ export function EdgeDetailsSection({
   edgeTypeSaving,
   edgeTypeOptions,
   nodeLabel,
-  formatEdgeTypeLabel,
   onEdgeTypeChange,
 }: EdgeDetailsSectionProps) {
   return (

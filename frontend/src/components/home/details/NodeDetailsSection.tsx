@@ -1,9 +1,13 @@
+import { useEffect, useRef, useState } from 'react'
 import type { Edge, Node } from '../../../api/client'
+import { formatEdgeTypeLabel } from '../../../pages/home/labels'
 import { Button } from '../../ui/button'
 import { InspectorLabel, InspectorSection, InspectorValue } from './primitives'
 import { NotesInlineEditor } from './NotesInlineEditor'
 import { PillTextInput } from './PillTextInput'
 import { TagInlineEditor } from './TagInlineEditor'
+
+const CONFIRM_DELETE_RESET_MS = 3000
 
 export type NodeDetailsSectionProps = {
   selectedNode: Node
@@ -14,7 +18,6 @@ export type NodeDetailsSectionProps = {
   nodeSaving: boolean
   connectedEdges: Edge[]
   nodeLabel: (id: string) => string
-  formatEdgeTypeLabel: (type: string) => string
   onNodeNameChange: (value: string) => void
   onNodeTeamChange: (value: string) => void
   onNodeNotesChange: (value: string) => void
@@ -32,7 +35,6 @@ export function NodeDetailsSection({
   nodeSaving,
   connectedEdges,
   nodeLabel,
-  formatEdgeTypeLabel,
   onNodeNameChange,
   onNodeTeamChange,
   onNodeNotesChange,
@@ -42,6 +44,36 @@ export function NodeDetailsSection({
 }: NodeDetailsSectionProps) {
   function saveNodeDrafts(nextTags: string[] = nodeTagsDraft) {
     onPersistNode(nodeNameDraft, nodeTeamDraft, nodeNotesDraft, nextTags)
+  }
+
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const confirmResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // DetailsPanel remounts this component per selected node (`key={selectedNode.id}`),
+  // so `confirmingDelete` resets automatically on selection change.
+  useEffect(() => {
+    const timerRef = confirmResetTimerRef
+    return () => {
+      const t = timerRef.current
+      if (t) clearTimeout(t)
+    }
+  }, [])
+
+  function onDeleteClick() {
+    if (!confirmingDelete) {
+      setConfirmingDelete(true)
+      if (confirmResetTimerRef.current) clearTimeout(confirmResetTimerRef.current)
+      confirmResetTimerRef.current = setTimeout(() => {
+        setConfirmingDelete(false)
+        confirmResetTimerRef.current = null
+      }, CONFIRM_DELETE_RESET_MS)
+      return
+    }
+    if (confirmResetTimerRef.current) {
+      clearTimeout(confirmResetTimerRef.current)
+      confirmResetTimerRef.current = null
+    }
+    onDeleteNode(selectedNode.id)
   }
 
   return (
@@ -106,13 +138,12 @@ export function NodeDetailsSection({
       <div className="border-t border-slate-800 pt-4">
         <Button
           type="button"
-          onClick={() => {
-            onDeleteNode(selectedNode.id)
-          }}
-          variant="destructive"
+          onClick={onDeleteClick}
+          variant={confirmingDelete ? 'destructive' : 'outline'}
           className="w-full"
+          aria-live="polite"
         >
-          Delete node
+          {confirmingDelete ? 'Click again to confirm' : 'Delete node'}
         </Button>
       </div>
 

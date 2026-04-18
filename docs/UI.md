@@ -12,7 +12,8 @@ This document describes the **frontend user experience** as implemented today: l
 |------|------------|
 | **Layout** | Full-height **Home** view: main graph column plus an optional **right-hand context panel** when a node or edge is selected. |
 | **Header** | App title (**Weave**), **quick command** and **search** inputs (shared row), **Focus mode** toggle. |
-| **Errors** | API/load/update failures surface as a **banner** at the top of the page. |
+| **Errors** | API/load/update failures surface as a **dismissible banner** at the top of the page (role=`alert`, `aria-live="assertive"`). |
+| **Loading / empty state** | While the initial graph load is in flight, the canvas shows a **loading placeholder** (`role="status"`, `aria-busy`); once loaded with no nodes, it shows an **empty hint** in the same slot. |
 | **Theme** | Dark, high-contrast workspace (Tailwind + small Radix-based controls). |
 
 ---
@@ -115,7 +116,7 @@ The **context panel** (implementation: `components/home/details`) appears when a
 - Edit **name** and **team** (pill-style inputs); **save on blur** or **Enter**; focus **stays** in the field (no jump to another control).
 - Edit **notes** as a lightweight **line-based scratchpad**: one idea per line, click a line to edit, `+ Add note` for quick append, Enter/blur to save, and clear a line to delete it.
 - Edit **tags** inline (pill list, `+ Add tag`, Enter create, Backspace remove-last, `×` remove).
-- **Delete node** (button).
+- **Delete node** — two-step confirm button (first click arms the action and recolours to destructive; a second click within ~3s deletes).
 - **Connections** list with formatted labels and edge types.
 
 `id` and `type` remain on the API model but are **omitted from the panel** to reduce noise.
@@ -134,7 +135,10 @@ The **context panel** (implementation: `components/home/details`) appears when a
 | Path | Role |
 |------|------|
 | `frontend/src/pages/Home.tsx` | Shell, selection state, focus mode, hover preview; composes graph search hook + input. |
-| `frontend/src/components/home/graphSearch/*` | `useGraphSearch` (query, matching IDs, preview id, ranked results) and `GraphSearchInput` (combobox UI). |
+| `frontend/src/pages/home/useNodeDraft.ts` | Drafts + persist for the selected node (name/team/notes/tags) with dirty-check and error surfacing. |
+| `frontend/src/components/common/ErrorBanner.tsx` | Dismissible top-of-page error banner. |
+| `frontend/src/components/home/GraphCanvasPlaceholder.tsx` | Loading / empty state placeholder for the graph canvas. |
+| `frontend/src/components/home/graphSearch/*` | `useGraphSearch` (query, matching IDs, preview id, ranked results) and `GraphSearchInput` (combobox UI; owns its own dropdown-open + blur debounce). |
 | `frontend/src/lib/graphSearchMatch.ts` | Pure search: field matching, scoring, ranking, match hints for the dropdown. |
 | `frontend/src/graph/GraphView.tsx` | React Flow shell, visible graph, hover debounce, viewport center, search visual overlay. |
 | `frontend/src/graph/dagreLayout.ts` | Dagre node positions. |
