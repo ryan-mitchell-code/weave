@@ -34,7 +34,11 @@ Details: **[docs/UI.md](docs/UI.md)**.
    export WEAVE_MODE=persist
    export DATABASE_URL='postgres://postgres:…@localhost:5432/weave?sslmode=disable'
    ```
-   You can also use **`direnv`**, a **`make`** target, or `set -a && source .env && set +a` in your shell to load **`.env`** into the environment. Omit **`WEAVE_MODE`** (or set it to anything other than **`persist`**) to use the **in-memory** store.
+   From **`backend/`**, you can load the repo-root **`.env`** and start the API in one step:
+   ```bash
+   ./run-with-env.sh
+   ```
+   (Unix shell / macOS / Linux; Git checks the script out executable.) Or use **`direnv`**, **`make`**, or `set -a && source ../.env && set +a` before **`go run`**. Omit **`WEAVE_MODE`** (or set it to anything other than **`persist`**) to use the **in-memory** store.
 2. **Database** — Start Postgres with Docker Compose from the repo root:
 
    ```bash
@@ -42,7 +46,7 @@ Details: **[docs/UI.md](docs/UI.md)**.
    ```
 
    Stop, reset, and `psql` access: **[docs/DEV_DATABASE.md](docs/DEV_DATABASE.md)**.
-3. **Backend** — Run the API (see **How to run (development)** below): `cd backend && go run ./cmd/api`.
+3. **Backend** — Run the API (see **How to run (development)** below): `cd backend && go run ./cmd/api`. With Postgres, from **`backend/`**: **`./run-with-env.sh`** (loads **`../.env`** then **`go run ./cmd/api`**).
 4. **Frontend** — Same section: `cd frontend && npm install && npm run dev`.
 
 ---
@@ -56,6 +60,13 @@ Run the **API** and **frontend** in two terminals. The Vite dev server **proxies
 ```bash
 cd backend
 go run ./cmd/api
+```
+
+**Postgres / `.env`:** from **`backend/`**, if **`WEAVE_MODE`** and **`DATABASE_URL`** are in the repo-root **`.env`** (after `docker compose up -d`):
+
+```bash
+cd backend
+./run-with-env.sh
 ```
 
 The server listens on **port 8080** (see `backend/cmd/api/main.go`). Health check: `GET http://localhost:8080/health`.
@@ -119,7 +130,8 @@ weave/
 ├── LICENSE                # MIT
 ├── backend/
 │   ├── cmd/api/           # HTTP server entrypoint
-│   └── internal/          # handlers, models, in-memory store
+│   ├── run-with-env.sh    # Dev: source ../.env then go run ./cmd/api
+│   └── internal/          # handlers, models, store backends
 └── frontend/
     ├── src/
     │   ├── api/           # Fetch helpers for the REST API

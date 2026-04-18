@@ -14,7 +14,7 @@ Edit **`.env`** and set **`POSTGRES_PASSWORD`** to a strong secret. If you chang
 
 Keep **`.env`** local only; it is listed in **`.gitignore`** and must not be committed.
 
-The **Go API** does not read this file. For **`WEAVE_MODE=persist`**, export **`DATABASE_URL`** (and **`WEAVE_MODE`**) in your shell before `go run`, or use **`set -a && source .env && set +a`** from the repo root so the process inherits those variables.
+The **Go API** does not read this file. For **`WEAVE_MODE=persist`**, export **`DATABASE_URL`** (and **`WEAVE_MODE`**) in your shell before `go run`, use **`set -a && source .env && set +a`** from the repo root, or from **`backend/`** run **`./run-with-env.sh`** (loads **`../.env`** then starts the API).
 
 ## 2. Start the database
 
