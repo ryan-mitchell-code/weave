@@ -1,6 +1,6 @@
 # Weave
 
-Weave is a **single-user** workspace for tech leads to **understand people and relationships**: a **graph** for **who connects to whom** (structure and navigation) and **notes/tags** for **personal context** that compounds over time. **Command bar** + **React Flow** graph + **context panel**; **Go REST API** (in-memory) and **React** (Vite) frontend.
+Weave is a **single-user** workspace for tech leads to **understand people and relationships**: a **graph** for **who connects to whom** (structure and navigation) and **notes/tags** for **personal context** that compounds over time. **Command bar** + **React Flow** graph + **context panel**; **Go REST API** (in-memory by default, **optional PostgreSQL** via **`WEAVE_MODE=persist`**) and **React** (Vite) frontend.
 
 **Documentation:** [PRD.md](PRD.md) (product intent, MVP, phases) · [docs/UI.md](docs/UI.md) (UI behaviour: graph, command bar, context panel, keyboard)
 
@@ -12,7 +12,7 @@ Weave is a **single-user** workspace for tech leads to **understand people and r
 - **Typed relationships** between people (`works_with`, `reports_to`, `depends_on`, plus custom strings the API accepts).
 - **Interactive graph**: Dagre layout, person-style nodes with **team colours**, selection, **hover preview**, **focus dimming**, **focus mode**, **animated active edges**, highlights after create/edit.
 - **Command bar**: quick add nodes and edges; forgiving syntax; suggestions with keyboard navigation.
-- **Context panel**: edit name, team, notes, and tags; delete node; change edge type; view connections.
+- **Context panel**: edit name, team, notes, and tags; delete node or edge; change edge type; view connections.
 - **Dark UI** (Tailwind + small Radix-based components).
 
 Details: **[docs/UI.md](docs/UI.md)**.
@@ -99,7 +99,7 @@ The API client uses `import.meta.env.VITE_API_BASE` and defaults to an **empty s
 |--------|------|-------------|
 | `GET` | `/health` | Liveness |
 | `GET` / `POST` / `PATCH` / `DELETE` | `/nodes` | People CRUD |
-| `GET` / `POST` / `PATCH` | `/edges` | Edges; `PATCH` updates edge type |
+| `GET` / `POST` / `PATCH` / `DELETE` | `/edges` | Edges; `PATCH` updates type; `DELETE` removes an edge |
 | `GET` | `/graph` | Full `{ nodes, edges }` snapshot |
 
 By default data is **in memory**. With **`WEAVE_MODE=persist`** and a running Postgres (see **Local development**), the API uses **`DATABASE_URL`** and persists nodes and edges in Postgres.
@@ -122,7 +122,7 @@ weave/
 ├── backend/
 │   ├── cmd/api/           # HTTP server entrypoint
 │   ├── run-with-env.sh    # Dev: source ../.env then go run ./cmd/api
-│   └── internal/          # handlers, models, store backends
+│   └── internal/          # handlers, models, store (in-memory + optional Postgres)
 └── frontend/
     ├── src/
     │   ├── api/           # Fetch helpers for the REST API

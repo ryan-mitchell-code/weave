@@ -159,5 +159,6 @@ The **context panel** (implementation: `components/home/details`) appears when a
 | `frontend/src/components/home/details/*` | Context panel sections. |
 | `frontend/src/components/home/details/NotesInlineEditor.tsx` | Notes scratchpad UI (line list add/edit/delete) persisted as newline-delimited `notes` text. |
 | `frontend/src/pages/home/*` | Quick command hook, `quickInputLogic`, `quickCommandExecute`, labels, shortcuts, shared constants. |
+| `frontend/src/api/client.ts` | REST helpers; **`fetchGraph`** normalizes **`nodes`/`edges`** to arrays (Go may JSON-encode empty slices as **`null`**). |
 | `frontend/src/lib/normalizeTags.ts` | Tag list trim/dedup before persist (matches API normalization). |
 | `frontend/src/index.css` | Global base styles; **flow** keyframes for edges. |

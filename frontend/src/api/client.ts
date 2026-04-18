@@ -40,9 +40,18 @@ async function parseJson<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>
 }
 
+function normalizeGraph(raw: Graph): Graph {
+  // Go encodes nil slices as JSON null; keep UI state always as real arrays.
+  return {
+    nodes: Array.isArray(raw.nodes) ? raw.nodes : [],
+    edges: Array.isArray(raw.edges) ? raw.edges : [],
+  }
+}
+
 export async function fetchGraph(): Promise<Graph> {
   const res = await fetch(`${baseUrl}/graph`)
-  return parseJson<Graph>(res)
+  const raw = await parseJson<Graph>(res)
+  return normalizeGraph(raw)
 }
 
 export interface CreateNodeInput {
