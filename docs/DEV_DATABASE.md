@@ -10,7 +10,7 @@ Copy the example env file and set a real password:
 cp .env.example .env
 ```
 
-Edit **`.env`** and set **`POSTGRES_PASSWORD`** to a strong secret. **Always keep `DATABASE_URL` in sync:** the **user** in the URL (immediately after `postgres://`, before `:`) must equal **`POSTGRES_USER`**. The **password**, **database** (`/weave` before `?`), host, and port must match **`POSTGRES_PASSWORD`**, **`POSTGRES_DB`**, and your Compose port. A common mistake is setting **`POSTGRES_USER=ryan`** but leaving **`DATABASE_URL`** as `postgres://postgres:...` — the app will connect as **`postgres`** and fail. Another is changing **`POSTGRES_PASSWORD`** but not updating the password in **`DATABASE_URL`**.
+Edit **`.env`** and set **`POSTGRES_PASSWORD`** to a strong secret. Either **omit `DATABASE_URL`** so the API builds the connection string from **`POSTGRES_USER`**, **`POSTGRES_PASSWORD`**, and **`POSTGRES_DB`**, or set **`DATABASE_URL`** so its user/password/database match **`POSTGRES_*`**. A common mistake is **`POSTGRES_USER=ryan`** while **`DATABASE_URL`** still says `postgres://postgres:...` — the app used to connect as **`postgres`** only from the URL; you will now get a **startup warning**, and you should **remove `DATABASE_URL`** from **`.env`** or change the URL user to **`ryan`**.
 
 If you change Postgres credentials after the volume already exists, the data directory still has the **old** password until you run **`docker compose down -v`** and bring the stack up again (this wipes data).
 
@@ -18,7 +18,7 @@ Passwords with characters like **`@` `:` `/` `#`** must be **URL-encoded** insid
 
 Keep **`.env`** local only; it is listed in **`.gitignore`** and must not be committed.
 
-The **Go API** does not read this file. For **`WEAVE_MODE=persist`**, export **`DATABASE_URL`** (and **`WEAVE_MODE`**) in your shell before `go run`, use **`set -a && source .env && set +a`** from the repo root, or from **`backend/`** run **`./run-with-env.sh`** (loads **`../.env`** then starts the API).
+The **Go API** does not read this file. For **`WEAVE_MODE=persist`**, load vars into the shell (**`set -a && source .env && set +a`**) or from **`backend/`** run **`./run-with-env.sh`**. **`DATABASE_URL`** may be omitted: the API will build a URL from **`POSTGRES_USER`**, **`POSTGRES_PASSWORD`**, and **`POSTGRES_DB`** (and optional **`POSTGRES_HOST`** / **`POSTGRES_PORT`**). If **`DATABASE_URL`** is set, it is used as-is; keep its username aligned with **`POSTGRES_USER`** or delete **`DATABASE_URL`** so **`POSTGRES_USER`** (e.g. **`ryan`**) is used automatically.
 
 ## 2. Start the database
 

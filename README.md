@@ -29,7 +29,7 @@ Details: **[docs/UI.md](docs/UI.md)**.
 
 ## Local development
 
-1. **Environment files** — Copy **`.env.example`** to **`.env`** at the repo root for **Docker Compose** (Postgres credentials) and as a reference for values. Do not commit **`.env`**. The **Go API does not read `.env` files**; it only sees real process environment variables (`os.Getenv`). For Postgres mode, export what you need before starting the server, for example:
+1. **Environment files** — Copy **`.env.example`** to **`.env`** at the repo root for **Docker Compose** (Postgres credentials) and as a reference for values. Do not commit **`.env`**. The **Go API does not read `.env` files**; it only sees real process environment variables (`os.Getenv`). For Postgres mode, set **`WEAVE_MODE=persist`**. **`DATABASE_URL`** is optional: if unset, the API builds a connection string from **`POSTGRES_USER`**, **`POSTGRES_PASSWORD`**, and **`POSTGRES_DB`** (host **`POSTGRES_HOST`** default **`localhost`**, port **`POSTGRES_PORT`** default **`5432`**). If **`DATABASE_URL`** *is* set, it wins — it must use the same DB user/password as your Compose DB (or remove it to use the auto-built URL). Example exports:
    ```bash
    export WEAVE_MODE=persist
    export DATABASE_URL='postgres://postgres:…@localhost:5432/weave?sslmode=disable'
