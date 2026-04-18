@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/lib/pq"
 
@@ -40,7 +41,7 @@ func OpenPostgres(dsn string) (*PostgresStore, error) {
 	db.SetMaxIdleConns(pgMaxIdleConns)
 	if err := db.Ping(); err != nil {
 		_ = db.Close()
-		return nil, fmt.Errorf("ping database: %w", err)
+		return nil, fmt.Errorf("ping database: %w%s", err, pgConnectHint(err))
 	}
 	s := &PostgresStore{db: db}
 	if err := s.ensureSchema(); err != nil {
@@ -337,4 +338,23 @@ func nullIfEmpty(s string) any {
 		return nil
 	}
 	return s
+}
+
+// pgConnectHint adds actionable text for common local-dev connection mistakes.
+func pgConnectHint(err error) string {
+	if err == nil || !isLikelyAuthFailure(err) {
+		return ""
+	}
+	return "; hint: DATABASE_URL user/password/db must match Postgres (same as POSTGRES_* in .env for Docker). " +
+		"If you changed POSTGRES_PASSWORD, update DATABASE_URL too. Special characters in the password must be URL-encoded in DATABASE_URL (e.g. @ → %40)."
+}
+
+func isLikelyAuthFailure(err error) bool {
+	var pqErr *pq.Error
+	if errors.As(err, &pqErr) && pqErr.Code == "28P01" {
+		return true
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "password authentication failed") ||
+		strings.Contains(msg, "authentication failed")
 }

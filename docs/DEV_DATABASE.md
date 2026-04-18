@@ -10,7 +10,11 @@ Copy the example env file and set a real password:
 cp .env.example .env
 ```
 
-Edit **`.env`** and set **`POSTGRES_PASSWORD`** to a strong secret. If you change **`POSTGRES_USER`** or **`POSTGRES_DB`**, update **`DATABASE_URL`** so it stays consistent.
+Edit **`.env`** and set **`POSTGRES_PASSWORD`** to a strong secret. **Always keep `DATABASE_URL` in sync:** the username, password, database name, host, and port in the URL must match what Postgres uses. A common mistake is changing **`POSTGRES_PASSWORD`** but leaving **`DATABASE_URL`** on the old password (e.g. `changeme`) — the Go app will fail with **password authentication failed**.
+
+If you change Postgres credentials after the volume already exists, the data directory still has the **old** password until you run **`docker compose down -v`** and bring the stack up again (this wipes data).
+
+Passwords with characters like **`@` `:` `/` `#`** must be **URL-encoded** inside **`DATABASE_URL`** (e.g. `@` → **`%40`**).
 
 Keep **`.env`** local only; it is listed in **`.gitignore`** and must not be committed.
 
@@ -59,3 +63,9 @@ Postgres data is stored in a Docker **named volume** (`weave_pgdata`), mounted a
 ## Port
 
 Host **5432** is mapped to the container. If another process uses 5432, adjust the **host** port in `docker-compose.yml` locally only.
+
+## Troubleshooting: `password authentication failed`
+
+1. Open **`.env`** and confirm the password in **`DATABASE_URL`** (between `:` and `@`) equals **`POSTGRES_PASSWORD`**.
+2. If you just changed the password, either update **`DATABASE_URL`** to match the **existing** volume’s password, or reset the volume: **`docker compose down -v`** then **`docker compose up -d`** (re-initializes Postgres with the new **`POSTGRES_PASSWORD`**; **all data is lost**).
+3. Encode special characters in the password for the URL (see section 1 above).
