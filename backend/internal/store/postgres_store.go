@@ -345,8 +345,9 @@ func pgConnectHint(err error) string {
 	if err == nil || !isLikelyAuthFailure(err) {
 		return ""
 	}
-	return "; hint: DATABASE_URL user/password/db must match Postgres (same as POSTGRES_* in .env for Docker). " +
-		"If you changed POSTGRES_PASSWORD, update DATABASE_URL too. Special characters in the password must be URL-encoded in DATABASE_URL (e.g. @ → %40)."
+	return "; hint: the user in DATABASE_URL (right after postgres://) must match POSTGRES_USER; password and DB name must match POSTGRES_PASSWORD and POSTGRES_DB. " +
+		"If you changed POSTGRES_USER (e.g. to your name), update DATABASE_URL too. If the data volume was first created with another user, run docker compose down -v and up again or keep using that user. " +
+		"URL-encode special characters in the password (e.g. @ → %40)."
 }
 
 func isLikelyAuthFailure(err error) bool {

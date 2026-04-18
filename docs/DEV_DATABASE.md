@@ -10,7 +10,7 @@ Copy the example env file and set a real password:
 cp .env.example .env
 ```
 
-Edit **`.env`** and set **`POSTGRES_PASSWORD`** to a strong secret. **Always keep `DATABASE_URL` in sync:** the username, password, database name, host, and port in the URL must match what Postgres uses. A common mistake is changing **`POSTGRES_PASSWORD`** but leaving **`DATABASE_URL`** on the old password (e.g. `changeme`) — the Go app will fail with **password authentication failed**.
+Edit **`.env`** and set **`POSTGRES_PASSWORD`** to a strong secret. **Always keep `DATABASE_URL` in sync:** the **user** in the URL (immediately after `postgres://`, before `:`) must equal **`POSTGRES_USER`**. The **password**, **database** (`/weave` before `?`), host, and port must match **`POSTGRES_PASSWORD`**, **`POSTGRES_DB`**, and your Compose port. A common mistake is setting **`POSTGRES_USER=ryan`** but leaving **`DATABASE_URL`** as `postgres://postgres:...` — the app will connect as **`postgres`** and fail. Another is changing **`POSTGRES_PASSWORD`** but not updating the password in **`DATABASE_URL`**.
 
 If you change Postgres credentials after the volume already exists, the data directory still has the **old** password until you run **`docker compose down -v`** and bring the stack up again (this wipes data).
 
@@ -66,6 +66,7 @@ Host **5432** is mapped to the container. If another process uses 5432, adjust t
 
 ## Troubleshooting: `password authentication failed`
 
-1. Open **`.env`** and confirm the password in **`DATABASE_URL`** (between `:` and `@`) equals **`POSTGRES_PASSWORD`**.
-2. If you just changed the password, either update **`DATABASE_URL`** to match the **existing** volume’s password, or reset the volume: **`docker compose down -v`** then **`docker compose up -d`** (re-initializes Postgres with the new **`POSTGRES_PASSWORD`**; **all data is lost**).
-3. Encode special characters in the password for the URL (see section 1 above).
+1. Open **`.env`**. The login name in **`DATABASE_URL`** must match **`POSTGRES_USER`** (e.g. both **`ryan`** or both **`postgres`**).
+2. Confirm the password in **`DATABASE_URL`** (between `:` and `@`) equals **`POSTGRES_PASSWORD`**.
+3. If you changed **`POSTGRES_USER`** or **`POSTGRES_PASSWORD`** after the volume was first created, Postgres still has the **old** superuser/password until you **`docker compose down -v`** then **`docker compose up -d`** (**data loss**) or you align **`DATABASE_URL`** with whatever the volume was initialized with.
+4. Encode special characters in the password for the URL (see section 1 above).
