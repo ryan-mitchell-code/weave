@@ -29,16 +29,7 @@ Details: **[docs/UI.md](docs/UI.md)**.
 
 ## Local development
 
-1. **Environment files** — Copy **`.env.example`** to **`.env`** at the repo root for **Docker Compose** (Postgres credentials) and as a reference for values. Do not commit **`.env`**. The **Go API does not read `.env` files**; it only sees real process environment variables (`os.Getenv`). For Postgres mode, set **`WEAVE_MODE=persist`**. **`DATABASE_URL`** is optional: if unset, the API builds a connection string from **`POSTGRES_USER`**, **`POSTGRES_PASSWORD`**, and **`POSTGRES_DB`** (host **`POSTGRES_HOST`** default **`localhost`**, port **`POSTGRES_PORT`** default **`5432`**). If **`DATABASE_URL`** *is* set, it wins — it must use the same DB user/password as your Compose DB (or remove it to use the auto-built URL). Example exports:
-   ```bash
-   export WEAVE_MODE=persist
-   export DATABASE_URL='postgres://postgres:…@localhost:5432/weave?sslmode=disable'
-   ```
-   From **`backend/`**, you can load the repo-root **`.env`** and start the API in one step:
-   ```bash
-   ./run-with-env.sh
-   ```
-   (Unix shell / macOS / Linux; Git checks the script out executable.) Or use **`direnv`**, **`make`**, or `set -a && source ../.env && set +a` before **`go run`**. Omit **`WEAVE_MODE`** (or set it to anything other than **`persist`**) to use the **in-memory** store.
+1. **Environment** — Copy **`.env.example`** to **`.env`**. **Compose** reads **`POSTGRES_*`**; the **Go API** reads **`DATABASE_URL`** and **`WEAVE_MODE`** only — set **`DATABASE_URL`** to the same user, password, and DB as **`POSTGRES_*`** (e.g. `postgres://ryan:secret@localhost:5432/weave?sslmode=disable`). Do not commit **`.env`**. From **`backend/`**: **`./run-with-env.sh`**, or `set -a && source ../.env && set +a` then **`go run ./cmd/api`**. Without **`WEAVE_MODE=persist`**, the API uses the **in-memory** store.
 2. **Database** — Start Postgres with Docker Compose from the repo root:
 
    ```bash

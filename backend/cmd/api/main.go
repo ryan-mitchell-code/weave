@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -15,15 +14,11 @@ import (
 func main() {
 	mode := strings.TrimSpace(os.Getenv("WEAVE_MODE"))
 	if mode == store.WeaveModePersist {
-		dsn := resolveDatabaseURL()
+		dsn := strings.TrimSpace(os.Getenv("DATABASE_URL"))
 		if dsn == "" {
-			log.Fatal("WEAVE_MODE=persist requires DATABASE_URL, or POSTGRES_USER + POSTGRES_PASSWORD + POSTGRES_DB (host defaults to localhost:5432)")
+			log.Fatal("WEAVE_MODE=persist requires DATABASE_URL")
 		}
-		warnIfPostgresUserMismatch(dsn)
 		log.Println("Using Postgres store (persist mode)")
-		if strings.TrimSpace(os.Getenv("DATABASE_URL")) == "" {
-			log.Println("DATABASE_URL unset; built connection string from POSTGRES_*")
-		}
 		log.Printf("DATABASE_URL (masked): %s", maskDatabaseURL(dsn))
 		ps, err := store.OpenPostgres(dsn)
 		if err != nil {
@@ -95,55 +90,4 @@ func maskDatabaseURL(dsn string) string {
 		return "<unparseable DATABASE_URL>"
 	}
 	return u.Redacted()
-}
-
-// resolveDatabaseURL returns DATABASE_URL if set; otherwise builds a postgres URL from
-// POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB, and optional POSTGRES_HOST / POSTGRES_PORT
-// (defaults localhost:5432). Docker Compose reads POSTGRES_* for the container; this lets
-// the same .env drive the Go client without duplicating the username in DATABASE_URL.
-func resolveDatabaseURL() string {
-	explicit := strings.TrimSpace(os.Getenv("DATABASE_URL"))
-	if explicit != "" {
-		return explicit
-	}
-	user := strings.TrimSpace(os.Getenv("POSTGRES_USER"))
-	pass := strings.TrimSpace(os.Getenv("POSTGRES_PASSWORD"))
-	db := strings.TrimSpace(os.Getenv("POSTGRES_DB"))
-	if user == "" || pass == "" || db == "" {
-		return ""
-	}
-	host := strings.TrimSpace(os.Getenv("POSTGRES_HOST"))
-	if host == "" {
-		host = "localhost"
-	}
-	port := strings.TrimSpace(os.Getenv("POSTGRES_PORT"))
-	if port == "" {
-		port = "5432"
-	}
-	u := &url.URL{
-		Scheme: "postgres",
-		User:   url.UserPassword(user, pass),
-		Host:   net.JoinHostPort(host, port),
-		Path:   "/" + db,
-	}
-	q := url.Values{}
-	q.Set("sslmode", "disable")
-	u.RawQuery = q.Encode()
-	return u.String()
-}
-
-func warnIfPostgresUserMismatch(dsn string) {
-	explicit := strings.TrimSpace(os.Getenv("DATABASE_URL"))
-	want := strings.TrimSpace(os.Getenv("POSTGRES_USER"))
-	if explicit == "" || want == "" {
-		return
-	}
-	parsed, err := url.Parse(dsn)
-	if err != nil || parsed.User == nil {
-		return
-	}
-	if urlUser := parsed.User.Username(); urlUser != "" && urlUser != want {
-		log.Printf("warning: DATABASE_URL uses db user %q but POSTGRES_USER is %q — connection uses DATABASE_URL. Update the URL or remove DATABASE_URL to build from POSTGRES_*.",
-			urlUser, want)
-	}
 }
