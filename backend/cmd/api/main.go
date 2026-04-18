@@ -3,10 +3,33 @@ package main
 import (
 	"log"
 	"net/http"
+	"net/url"
+	"os"
+	"strings"
+
 	"org-graph/internal/handlers"
+	"org-graph/internal/store"
 )
 
 func main() {
+	mode := strings.TrimSpace(os.Getenv("WEAVE_MODE"))
+	if mode == store.WeaveModePersist {
+		dsn := strings.TrimSpace(os.Getenv("DATABASE_URL"))
+		if dsn == "" {
+			log.Fatal("WEAVE_MODE=persist requires DATABASE_URL")
+		}
+		log.Println("Using Postgres store (persist mode)")
+		log.Printf("DATABASE_URL (masked): %s", maskDatabaseURL(dsn))
+		ps, err := store.OpenPostgres(dsn)
+		if err != nil {
+			log.Fatalf("postgres: %v", err)
+		}
+		store.SetBackend(ps)
+	} else {
+		store.SetBackend(store.NewMemoryStore())
+		log.Println("Using in-memory store")
+	}
+
 	mux := http.NewServeMux()
 
 	// Health check
@@ -57,4 +80,14 @@ func main() {
 
 	log.Println("Server running on :8080")
 	log.Fatal(http.ListenAndServe(":8080", mux))
+}
+
+// maskDatabaseURL returns a copy of dsn safe to log (password redacted).
+// Non-URL DSN strings (e.g. lib/pq keyword format) are not parsed and are not logged verbatim.
+func maskDatabaseURL(dsn string) string {
+	u, err := url.Parse(dsn)
+	if err != nil {
+		return "<unparseable DATABASE_URL>"
+	}
+	return u.Redacted()
 }

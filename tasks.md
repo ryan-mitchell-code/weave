@@ -30,10 +30,9 @@
 
 ### Task 4: PostgreSQL setup
 
-* [ ] Add DB connection
-* [ ] Create nodes table
-* [ ] Create edges table
-* [ ] Replace in-memory storage
+* [x] Add DB connection (opt-in: **`WEAVE_MODE=persist`**, **`DATABASE_URL`**)
+* [x] Create nodes / edges tables (on startup, inline DDL)
+* [x] Swappable store: in-memory (default) vs Postgres
 
 ---
 
@@ -79,9 +78,9 @@
 
 ## Stretch goals
 
-* [ ] Tagging system
-* [ ] Search
-* [x] Keyboard shortcuts *(partial: e.g. Delete on selected node — see docs/UI.md)*
+* [x] Tagging system *(lightweight tags in context panel — see docs/UI.md)*
+* [x] Search *(dedicated header search — see docs/UI.md, PRD §13)*
+* [x] Keyboard shortcuts *(e.g. Delete on selection — see docs/UI.md)*
 * [ ] Local LLM support
 
 ---

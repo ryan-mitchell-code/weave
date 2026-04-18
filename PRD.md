@@ -80,13 +80,14 @@ The product is a **single-user, command-first graph workspace** with a polished 
 
 ### Shipped (working end-to-end)
 
-#### Backend (Go, REST, in-memory store)
+#### Backend (Go, REST)
 
 | Area | Details |
 |------|---------|
+| **Storage** | Default **in-memory** store; **PostgreSQL** when **`WEAVE_MODE=persist`** and **`DATABASE_URL`** are set (see [README.md](README.md), [docs/DEV_DATABASE.md](docs/DEV_DATABASE.md)). |
 | **Nodes** | `GET` / `POST` / `PATCH` / `DELETE` `/nodes` — person nodes with `name`, `team`, `notes`, `tags` (notes/tags editable in the UI context panel). |
-| **Edges** | `GET` / `POST` `/edges`, `PATCH` `/edges` — relationship links with **editable type**. |
-| **Graph** | `GET` `/graph` — combined nodes and edges for the frontend. |
+| **Edges** | `GET` / `POST` / `PATCH` / `DELETE` `/edges` — relationship links with **editable type**; delete removes one edge. |
+| **Graph** | `GET` `/graph` — combined `nodes` and `edges` for the frontend. |
 
 #### Frontend (React, Vite, React Flow, Tailwind)
 
@@ -94,16 +95,16 @@ The product is a **single-user, command-first graph workspace** with a polished 
 |------|---------|
 | **Interactive graph** | **Dagre** layout (top-to-bottom). **Person-style** nodes with **team colours**. **Selection**, **hover preview**, **focus dimming** (connected component). **Focus mode** (selected node + neighbours). **Subtle animated flow** on active edges. **Highlight** feedback after actions. |
 | **Command bar** | **Primary interaction surface** (outside the context panel): **navigation** (type to match and focus people on the graph), **creation** (nodes and edges with forgiving syntax: `->`, `to`, tokens; suggestions and keyboard control). May gain **small conveniences** in the same field (e.g. richer tag entry) without separate “modes.” **Full search** over names, notes, and tags is a **separate control** — **§13**. |
-| **Context panel** | Node editing (**name**, **team**, **notes**, **tags**); edge **type** editing; **node deletion**; **connections** view. |
+| **Context panel** | Node editing (**name**, **team**, **notes**, **tags**); edge **type** editing; **node** and **edge** deletion; **connections** view. |
 | **Visual design** | Dark, high-contrast workspace; graph styling centralised for iteration. |
 
 ### Intentionally not done yet
 
-- **Persistent database** (still in-memory).
 - **Multi-user** / collaboration.
 - Advanced tag UX (autocomplete/filtering) in the UI.
-- **Dedicated search** over names, tags, and notes (spec: **§13**); the command bar alone is not full search over context.
 - **AI** querying.
+
+**Shipped:** **Dedicated search** (header field; names, team, tags, notes — see [docs/UI.md](docs/UI.md)) complements the command bar. **Optional PostgreSQL** persistence for local/dev (Compose + **`WEAVE_MODE=persist`**).
 
 ---
 
@@ -166,9 +167,9 @@ Defaults to **`works_with`** on **API** create if `type` is omitted. The **comma
 ### Backend
 
 - [x] Node CRUD  
-- [x] Edge creation + type update  
+- [x] Edge creation, type update, and delete  
 - [x] Graph snapshot endpoint  
-- [ ] **PostgreSQL** persistence (**next milestone**)
+- [x] **PostgreSQL** persistence (opt-in: **`WEAVE_MODE=persist`**, **`DATABASE_URL`**; tables created on startup — no migration framework yet)
 
 ### Frontend
 
@@ -241,7 +242,7 @@ Weave will offer **grounded, practical help** drawn from **your notes and graph 
 |--------|-------------|
 | **Backend** | Go (REST API) |
 | **Frontend** | React (Vite), React Flow, Tailwind CSS, Radix-based primitives |
-| **Database** | **Current:** in-memory · **Target:** PostgreSQL |
+| **Database** | **Default:** in-memory · **Optional:** PostgreSQL (**`WEAVE_MODE=persist`**, local Compose — [docs/DEV_DATABASE.md](docs/DEV_DATABASE.md)) |
 | **AI (future)** | OpenAI (initial); local models (future) |
 
 ---
@@ -252,8 +253,8 @@ Weave will offer **grounded, practical help** drawn from **your notes and graph 
 |-------|--------|--------|
 | 1 | Graph API + in-memory storage | **Done** |
 | 2 | Frontend graph + command UX | **Done** |
-| 3 | PostgreSQL persistence | **Next** |
-| 4 | Advanced tags, search | Planned |
+| 3 | PostgreSQL persistence (opt-in dev) | **Done** |
+| 4 | Advanced tags; richer search ranking / UX | **In progress / planned** (baseline search shipped — [docs/UI.md](docs/UI.md)) |
 | 5 | AI-assisted answers (from your context) | Planned |
 
 ---
