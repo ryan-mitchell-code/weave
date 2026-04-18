@@ -23,6 +23,23 @@ Details: **[docs/UI.md](docs/UI.md)**.
 
 - **Go** 1.23+ (see `backend/go.mod`)
 - **Node.js** 20+ and **npm** (for the frontend)
+- **Docker** (optional) — for local **PostgreSQL** via Compose (see below)
+
+---
+
+## Local development
+
+1. **Environment** — At the repo root, copy **`.env.example`** to **`.env`**, then set **`POSTGRES_PASSWORD`** (and align **`DATABASE_URL`** if you change user, password, host, port, or database name). Variables are documented in **`.env.example`**; do not commit **`.env`**. For **`go run`**, load these into the process environment (e.g. export manually, `direnv`, or another loader); Docker Compose reads **`.env`** automatically for the database container only.
+2. **`WEAVE_MODE`** — Set **`WEAVE_MODE=persist`** in **`.env`** to enable **database mode**: the backend is intended to use **`DATABASE_URL`** and related settings from the environment instead of the in-memory store. (Until that wiring lands, behaviour may still fall back to in-memory; see [PRD](PRD.md).)
+3. **Database** — Start Postgres with Docker Compose from the repo root:
+
+   ```bash
+   docker compose up -d
+   ```
+
+   Stop, reset, and `psql` access: **[docs/DEV_DATABASE.md](docs/DEV_DATABASE.md)**.
+4. **Backend** — Run the API (see **How to run (development)** below): `cd backend && go run ./cmd/api`.
+5. **Frontend** — Same section: `cd frontend && npm install && npm run dev`.
 
 ---
 
@@ -88,8 +105,11 @@ Data is stored **in memory** until persistence is added (see PRD).
 ```text
 weave/
 ├── PRD.md                 # Product requirements, MVP, phases
+├── docker-compose.yml     # Local PostgreSQL (dev)
+├── .env.example           # Example env (copy to .env; not committed)
 ├── docs/
-│   └── UI.md              # Frontend UI (graph, command bar, context panel)
+│   ├── UI.md              # Frontend UI (graph, command bar, context panel)
+│   └── DEV_DATABASE.md    # Local Postgres via Docker Compose
 ├── tasks.md               # Historical checklist (may lag PRD §4)
 ├── README.md              # This file
 ├── LICENSE                # MIT
