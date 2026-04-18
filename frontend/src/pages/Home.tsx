@@ -352,7 +352,7 @@ export default function Home() {
                 onNodeHover={setHoveredNodeId}
                 onNodeHoverEnd={endNodeHover}
                 height="100%"
-                searchActive={searchActive}
+                searchActive={searchActive && searchResults.length > 0}
                 searchMatchingNodeIds={searchMatchingNodeIds}
                 searchPreviewNodeId={searchPreviewNodeIdForGraph}
                 searchBlendNonMatchesWithFocusSubgraph={searchBlendOverlayWithSelection}

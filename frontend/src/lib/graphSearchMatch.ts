@@ -68,39 +68,11 @@ function notesMatchSnippet(notes: string, qLower: string): string {
   return `${prefix}${chunk}${suffix}`
 }
 
-function strongestMatchHint(node: Node, qLower: string): string | null {
-  const nameMatch = includesInsensitive(node.name, qLower)
-  const teamRaw = node.team?.trim() ?? ''
-  const teamMatch = !!(teamRaw && includesInsensitive(teamRaw, qLower))
-  const matchedTag = firstMatchingTag(node, qLower)
-  const notes = node.notes ?? ''
-  const notesMatch = !!(notes && includesInsensitive(notes, qLower))
-
-  type Cand = { weight: number; hint: string | null }
-  const cands: Cand[] = []
-  if (nameMatch) cands.push({ weight: SCORE_NAME, hint: null })
-  if (teamMatch)
-    cands.push({
-      weight: SCORE_TEAM,
-      hint: `Team: ${capitalizeDisplayWords(teamRaw)}`,
-    })
-  if (matchedTag)
-    cands.push({
-      weight: SCORE_TAG,
-      hint: `Tag: ${capitalizeDisplayWords(matchedTag)}`,
-    })
-  if (notesMatch)
-    cands.push({ weight: SCORE_NOTES, hint: notesMatchSnippet(notes, qLower) })
-
-  if (cands.length === 0) return null
-  cands.sort((a, b) => b.weight - a.weight)
-  if (cands[0].weight === SCORE_NAME) return null
-  return cands[0].hint
-}
-
 export type GraphSearchResultRow = {
   node: Node
-  matchHint: string | null
+  matchType: 'name' | 'team' | 'tag' | 'notes'
+  tagMatchValue: string | null
+  notesSnippet: string | null
 }
 
 export function rankGraphSearchResults(
@@ -115,10 +87,24 @@ export function rankGraphSearchResults(
     .map((node) => {
       const score = scoreNode(node, qLower)
       if (score <= 0) return null
+      const teamRaw = node.team?.trim() ?? ''
+      const matchedTag = firstMatchingTag(node, qLower)
+      const notes = node.notes ?? ''
+      const nameMatch = includesInsensitive(node.name, qLower)
+      const teamMatch = !!(teamRaw && includesInsensitive(teamRaw, qLower))
+      const notesMatch = !!(notes && includesInsensitive(notes, qLower))
+
+      let matchType: GraphSearchResultRow['matchType'] = 'name'
+      if (!nameMatch && teamMatch) matchType = 'team'
+      else if (!nameMatch && !teamMatch && matchedTag) matchType = 'tag'
+      else if (!nameMatch && !teamMatch && !matchedTag && notesMatch) matchType = 'notes'
+
       return {
         node,
         score,
-        matchHint: strongestMatchHint(node, qLower),
+        matchType,
+        tagMatchValue: matchedTag ? capitalizeDisplayWords(matchedTag) : null,
+        notesSnippet: notesMatch ? notesMatchSnippet(notes, qLower) : null,
       }
     })
     .filter((row): row is NonNullable<typeof row> => row != null)
@@ -128,5 +114,10 @@ export function rankGraphSearchResults(
     return a.node.name.localeCompare(b.node.name)
   })
 
-  return scored.slice(0, limit).map(({ node, matchHint }) => ({ node, matchHint }))
+  return scored.slice(0, limit).map(({ node, matchType, tagMatchValue, notesSnippet }) => ({
+    node,
+    matchType,
+    tagMatchValue,
+    notesSnippet,
+  }))
 }
