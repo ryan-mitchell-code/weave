@@ -7,11 +7,16 @@ import (
 	"os"
 	"strings"
 
+	"github.com/joho/godotenv"
+
 	"org-graph/internal/handlers"
 	"org-graph/internal/store"
 )
 
 func main() {
+	// Load .env into the process environment (optional files; does not override existing env).
+	loadDotEnv()
+
 	mode := strings.TrimSpace(os.Getenv("WEAVE_MODE"))
 	if mode == store.WeaveModePersist {
 		dsn := strings.TrimSpace(os.Getenv("DATABASE_URL"))
@@ -90,4 +95,15 @@ func maskDatabaseURL(dsn string) string {
 		return "<unparseable DATABASE_URL>"
 	}
 	return u.Redacted()
+}
+
+// loadDotEnv loads optional .env files into the process environment without overriding
+// variables already set in the shell (godotenv default).
+// Prefer ./.env; if missing (typical when cwd is backend/), load ../.env (repo root).
+func loadDotEnv() {
+	if _, err := os.Stat(".env"); err == nil {
+		_ = godotenv.Load(".env")
+		return
+	}
+	_ = godotenv.Load("../.env")
 }

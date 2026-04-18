@@ -29,7 +29,7 @@ Details: **[docs/UI.md](docs/UI.md)**.
 
 ## Local development
 
-1. **Environment** — At the repo root, copy **`.env.example`** to **`.env`**, then set **`POSTGRES_PASSWORD`** (and align **`DATABASE_URL`** if you change user, password, host, port, or database name). Variables are documented in **`.env.example`**; do not commit **`.env`**. For **`go run`**, load these into the process environment (e.g. export manually, `direnv`, or another loader); Docker Compose reads **`.env`** automatically for the database container only.
+1. **Environment** — At the repo root, copy **`.env.example`** to **`.env`**, then set **`POSTGRES_PASSWORD`** (and align **`DATABASE_URL`** if you change user, password, host, port, or database name). Variables are documented in **`.env.example`**; do not commit **`.env`**. The API loads **`.env`** on startup: **`./.env`** if present, otherwise **`../.env`** (so `cd backend && go run ./cmd/api` picks up the repo-root file). Already-exported shell variables are not overwritten. Docker Compose still reads **`.env`** for the database container.
 2. **`WEAVE_MODE`** — Set **`WEAVE_MODE=persist`** in **`.env`** so the backend uses **`DATABASE_URL`** and the **Postgres** store (tables are created on startup). Omit it or use any other value for the **in-memory** store.
 3. **Database** — Start Postgres with Docker Compose from the repo root:
 
