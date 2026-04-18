@@ -30,7 +30,7 @@ Details: **[docs/UI.md](docs/UI.md)**.
 ## Local development
 
 1. **Environment** — At the repo root, copy **`.env.example`** to **`.env`**, then set **`POSTGRES_PASSWORD`** (and align **`DATABASE_URL`** if you change user, password, host, port, or database name). Variables are documented in **`.env.example`**; do not commit **`.env`**. For **`go run`**, load these into the process environment (e.g. export manually, `direnv`, or another loader); Docker Compose reads **`.env`** automatically for the database container only.
-2. **`WEAVE_MODE`** — Set **`WEAVE_MODE=persist`** in **`.env`** to enable **database mode**: the backend is intended to use **`DATABASE_URL`** and related settings from the environment instead of the in-memory store. (Until that wiring lands, behaviour may still fall back to in-memory; see [PRD](PRD.md).)
+2. **`WEAVE_MODE`** — Set **`WEAVE_MODE=persist`** in **`.env`** so the backend uses **`DATABASE_URL`** and the **Postgres** store (tables are created on startup). Omit it or use any other value for the **in-memory** store.
 3. **Database** — Start Postgres with Docker Compose from the repo root:
 
    ```bash
@@ -96,7 +96,7 @@ The API client uses `import.meta.env.VITE_API_BASE` and defaults to an **empty s
 | `GET` / `POST` / `PATCH` | `/edges` | Edges; `PATCH` updates edge type |
 | `GET` | `/graph` | Full `{ nodes, edges }` snapshot |
 
-Data is stored **in memory** until persistence is added (see PRD).
+By default data is **in memory**. With **`WEAVE_MODE=persist`** and a running Postgres (see **Local development**), the API uses **`DATABASE_URL`** and persists nodes and edges in Postgres.
 
 ---
 
