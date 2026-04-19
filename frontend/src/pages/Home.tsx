@@ -166,6 +166,7 @@ export default function Home() {
     resetActive: resetSearchActive,
     pickResult: pickSearchResult,
   } = useGraphSearch(nodes, {
+    selectedNodeId,
     onResultPick: useCallback(
       (nodeId: string) => {
         setHoveredNodeId(null)

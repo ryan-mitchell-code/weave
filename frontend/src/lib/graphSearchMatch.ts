@@ -1,9 +1,11 @@
 /**
  * Graph header search: substring matching and ranked dropdown results.
  *
- * Matching drives graph highlight (all fields); ranking only affects the dropdown order.
- * To extend (e.g. fuzzy search), centralize new match logic in `nodeMatchesSearchQuery` /
- * `scoreNode` and keep `rankGraphSearchResults` in sync.
+ * Matching drives graph highlight (all fields). It stays frontend-owned so the overlay
+ * stays consistent; the API may rank a subset of matches with different stricter rules.
+ *
+ * Ranking affects dropdown order only. To extend (e.g. fuzzy search), centralize new
+ * match logic in `nodeMatchesSearchQuery` / `scoreNode` and keep `rankGraphSearchResults` in sync.
  */
 import type { Node } from '../api/client'
 import { capitalizeDisplayWords } from './displayFormat'
@@ -75,6 +77,35 @@ export type GraphSearchResultRow = {
   notesSnippet: string | null
 }
 
+/** One dropdown row for a node that matches the query (same rules as full graph matching). */
+export function graphSearchResultRowForMatch(
+  node: Node,
+  queryTrimmed: string,
+): GraphSearchResultRow | null {
+  const qLower = queryTrimmed.trim().toLowerCase()
+  if (!qLower) return null
+  const score = scoreNode(node, qLower)
+  if (score <= 0) return null
+  const teamRaw = node.team?.trim() ?? ''
+  const matchedTag = firstMatchingTag(node, qLower)
+  const notes = node.notes ?? ''
+  const nameMatch = includesInsensitive(node.name, qLower)
+  const teamMatch = !!(teamRaw && includesInsensitive(teamRaw, qLower))
+  const notesMatch = !!(notes && includesInsensitive(notes, qLower))
+
+  let matchType: GraphSearchResultRow['matchType'] = 'name'
+  if (!nameMatch && teamMatch) matchType = 'team'
+  else if (!nameMatch && !teamMatch && matchedTag) matchType = 'tag'
+  else if (!nameMatch && !teamMatch && !matchedTag && notesMatch) matchType = 'notes'
+
+  return {
+    node,
+    matchType,
+    tagMatchValue: matchedTag ? capitalizeDisplayWords(matchedTag) : null,
+    notesSnippet: notesMatch ? notesMatchSnippet(notes, qLower) : null,
+  }
+}
+
 export function rankGraphSearchResults(
   nodes: Node[],
   queryTrimmed: string,
@@ -85,39 +116,16 @@ export function rankGraphSearchResults(
 
   const scored = nodes
     .map((node) => {
-      const score = scoreNode(node, qLower)
-      if (score <= 0) return null
-      const teamRaw = node.team?.trim() ?? ''
-      const matchedTag = firstMatchingTag(node, qLower)
-      const notes = node.notes ?? ''
-      const nameMatch = includesInsensitive(node.name, qLower)
-      const teamMatch = !!(teamRaw && includesInsensitive(teamRaw, qLower))
-      const notesMatch = !!(notes && includesInsensitive(notes, qLower))
-
-      let matchType: GraphSearchResultRow['matchType'] = 'name'
-      if (!nameMatch && teamMatch) matchType = 'team'
-      else if (!nameMatch && !teamMatch && matchedTag) matchType = 'tag'
-      else if (!nameMatch && !teamMatch && !matchedTag && notesMatch) matchType = 'notes'
-
-      return {
-        node,
-        score,
-        matchType,
-        tagMatchValue: matchedTag ? capitalizeDisplayWords(matchedTag) : null,
-        notesSnippet: notesMatch ? notesMatchSnippet(notes, qLower) : null,
-      }
+      const row = graphSearchResultRowForMatch(node, queryTrimmed)
+      if (!row) return null
+      return { row, score: scoreNode(node, qLower) }
     })
     .filter((row): row is NonNullable<typeof row> => row != null)
 
   scored.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score
-    return a.node.name.localeCompare(b.node.name)
+    return a.row.node.name.localeCompare(b.row.node.name)
   })
 
-  return scored.slice(0, limit).map(({ node, matchType, tagMatchValue, notesSnippet }) => ({
-    node,
-    matchType,
-    tagMatchValue,
-    notesSnippet,
-  }))
+  return scored.slice(0, limit).map(({ row }) => row)
 }
