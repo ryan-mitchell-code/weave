@@ -73,6 +73,36 @@ describe('useGraphSearch', () => {
     )
   })
 
+  it('passes recencyMap to searchNodes when set', async () => {
+    vi.mocked(searchNodes).mockResolvedValue([])
+    const recencyMap = { '1': 1_700_000_000_000 }
+
+    const { result } = renderHook(() =>
+      useGraphSearch(nodes, {
+        onResultPick: vi.fn(),
+        recencyMap,
+      }),
+    )
+
+    act(() => {
+      result.current.setQuery('x')
+    })
+
+    await waitFor(
+      () => {
+        expect(vi.mocked(searchNodes)).toHaveBeenCalledWith(
+          'x',
+          undefined,
+          expect.objectContaining({
+            signal: expect.any(AbortSignal),
+            recencyMap,
+          }),
+        )
+      },
+      { timeout: 800 },
+    )
+  })
+
   it('passes selectedNodeId to searchNodes when set', async () => {
     vi.mocked(searchNodes).mockResolvedValue([])
 

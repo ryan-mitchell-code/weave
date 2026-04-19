@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"testing"
+	"time"
 
 	"org-graph/internal/models"
 )
@@ -106,11 +107,68 @@ func TestScoreNode(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			qLower := tt.q
-			got := scoreNode(tt.node, qLower, tt.neighbors)
+			got := scoreNode(tt.node, qLower, tt.neighbors, nil)
 			if got != tt.want {
 				t.Fatalf("scoreNode(...) = %d, want %d", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestRecencyBoost(t *testing.T) {
+	t.Parallel()
+	now := time.Now()
+	tests := []struct {
+		name string
+		age  time.Duration
+		want int
+	}{
+		{"under 5 min", -2 * time.Minute, 10},
+		{"under 1 hour", -30 * time.Minute, 8},
+		{"under 6 hours", -3 * time.Hour, 5},
+		{"under 24 hours", -12 * time.Hour, 2},
+		{"older than 24 hours", -48 * time.Hour, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			const id = "person1"
+			m := map[string]int64{id: now.Add(tt.age).UnixMilli()}
+			if got := recencyBoost(id, m); got != tt.want {
+				t.Fatalf("recencyBoost(...) = %d, want %d", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRecencyBoostMissing(t *testing.T) {
+	t.Parallel()
+	if recencyBoost("x", nil) != 0 {
+		t.Fatal("nil map should yield 0")
+	}
+	if recencyBoost("x", map[string]int64{}) != 0 {
+		t.Fatal("empty map should yield 0")
+	}
+}
+
+func TestRecencyBoostFutureTimestamp(t *testing.T) {
+	t.Parallel()
+	now := time.Now()
+	m := map[string]int64{"x": now.Add(1 * time.Hour).UnixMilli()}
+	if got := recencyBoost("x", m); got != scoreRecency5m {
+		t.Fatalf("future wall time should use freshest tier, got %d want %d", got, scoreRecency5m)
+	}
+}
+
+func TestScoreNodeWithRecency(t *testing.T) {
+	t.Parallel()
+	ts := time.Now().UnixMilli()
+	rec := map[string]int64{"a": ts}
+	n := models.Node{ID: "a", Name: "Alice"}
+	got := scoreNode(n, "alice", nil, rec)
+	want := scoreNameExact + scoreRecency5m
+	if got != want {
+		t.Fatalf("scoreNode with recency = %d, want %d", got, want)
 	}
 }
 

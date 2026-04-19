@@ -1,10 +1,13 @@
 package handlers
 
 import (
+	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"sort"
 	"strings"
+	"time"
 
 	"org-graph/internal/models"
 	"org-graph/internal/store"
@@ -18,19 +21,40 @@ const (
 	scoreTagOrTeam   = 40
 	scoreNotes       = 20
 	scoreProximity   = 15
-	// scoreRecency = 10 — not implemented (recently viewed/edited with decay).
 )
 
-// SearchResult is one ranked node from GET /search.
+// Recency decay tiers (PRD §13.8 +10 with decay). Applied only when POST body includes timestamps.
+const (
+	scoreRecency5m  = 10
+	scoreRecency1h  = 8
+	scoreRecency6h  = 5
+	scoreRecency24h = 2
+)
+
+// maxSearchBodyBytes caps POST /search JSON to avoid unbounded memory on malicious clients.
+const maxSearchBodyBytes = 256 << 10
+
+// SearchResult is one ranked node from GET or POST /search.
 type SearchResult struct {
 	Node  models.Node `json:"node"`
 	Score int         `json:"score"`
 }
 
-// Search handles GET /search?q=...&selected_node_id=...
-// Ranking follows PRD §13.8 (MVP): name, team, tags, notes, graph proximity; recency not implemented yet.
+type searchRequestBody struct {
+	Recency map[string]int64 `json:"recency"`
+}
+
+// Search handles GET /search?q=...&selected_node_id=... (no recency) and
+// POST with the same query string plus JSON body `{ "recency": { "nodeId": <epoch_ms> } }`.
+// Ranking follows PRD §13.8: name, team, tags, notes, graph proximity, recency (decayed).
 func Search(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
+	var recency map[string]int64
+	switch r.Method {
+	case http.MethodGet:
+		recency = nil
+	case http.MethodPost:
+		recency = parseSearchRecencyBody(r)
+	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -51,7 +75,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 
 	out := make([]SearchResult, 0, len(nodes))
 	for _, n := range nodes {
-		s := scoreNode(n, qLower, neighbors)
+		s := scoreNode(n, qLower, neighbors, recency)
 		if s > 0 {
 			out = append(out, SearchResult{Node: n, Score: s})
 		}
@@ -67,6 +91,30 @@ func Search(w http.ResponseWriter, r *http.Request) {
 	})
 
 	writeJSON(w, http.StatusOK, out)
+}
+
+func parseSearchRecencyBody(r *http.Request) map[string]int64 {
+	if r.Body == nil {
+		return nil
+	}
+	defer r.Body.Close()
+	data, err := io.ReadAll(io.LimitReader(r.Body, maxSearchBodyBytes+1))
+	if err != nil || len(data) == 0 {
+		return nil
+	}
+	if len(data) > maxSearchBodyBytes {
+		log.Printf("search: recency body exceeds %d bytes, ignoring", maxSearchBodyBytes)
+		return nil
+	}
+	var body searchRequestBody
+	if err := json.Unmarshal(data, &body); err != nil {
+		log.Printf("search: ignoring recency body: %v", err)
+		return nil
+	}
+	if len(body.Recency) == 0 {
+		return nil
+	}
+	return body.Recency
 }
 
 // neighborIDs returns IDs directly connected to selectedID (undirected). Nil if selectedID is empty.
@@ -102,7 +150,31 @@ func matchesAllTerms(text, query string) bool {
 	return true
 }
 
-func scoreNode(n models.Node, qLower string, neighbors map[string]struct{}) int {
+func recencyBoost(id string, recency map[string]int64) int {
+	if recency == nil {
+		return 0
+	}
+	ts, ok := recency[id]
+	if !ok {
+		return 0
+	}
+	age := time.Since(time.UnixMilli(ts))
+
+	switch {
+	case age < 5*time.Minute:
+		return scoreRecency5m
+	case age < 1*time.Hour:
+		return scoreRecency1h
+	case age < 6*time.Hour:
+		return scoreRecency6h
+	case age < 24*time.Hour:
+		return scoreRecency24h
+	default:
+		return 0
+	}
+}
+
+func scoreNode(n models.Node, qLower string, neighbors map[string]struct{}, recency map[string]int64) int {
 	score := scoreFromName(n, qLower)
 	score += scoreFromTeam(n.Team, qLower)
 	score += scoreFromTags(n.Tags, qLower)
@@ -113,6 +185,8 @@ func scoreNode(n models.Node, qLower string, neighbors map[string]struct{}) int 
 			score += scoreProximity
 		}
 	}
+
+	score += recencyBoost(n.ID, recency)
 
 	return score
 }

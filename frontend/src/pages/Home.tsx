@@ -16,6 +16,7 @@ import { GraphSearchInput, useGraphSearch } from '../components/home/graphSearch
 import { DetailsPanel } from '../components/home/details/DetailsPanel'
 import { EDGE_TYPE_OPTIONS } from './home/constants'
 import { formatNodeLabel } from './home/labels'
+import { loadRecency, saveRecency, touchRecency } from '../lib/recency'
 import { useDeleteSelectionShortcut } from './home/useDeleteSelectionShortcut'
 import { useHighlightFlash } from './home/useHighlightFlash'
 import { useNodeDraft } from './home/useNodeDraft'
@@ -33,6 +34,17 @@ export default function Home() {
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
   const [searchBlendOverlayWithSelection, setSearchBlendOverlayWithSelection] = useState(false)
   const [searchDropdownOpen, setSearchDropdownOpen] = useState(false)
+  const [recencyMap, setRecencyMap] = useState<Record<string, number>>(() =>
+    loadRecency(),
+  )
+
+  const bumpRecency = useCallback((id: string) => {
+    setRecencyMap((prev) => {
+      const next = touchRecency(prev, id)
+      saveRecency(next)
+      return next
+    })
+  }, [])
 
   const exitSearchBlendOverlay = useCallback(() => {
     setSearchBlendOverlayWithSelection(false)
@@ -137,8 +149,9 @@ export default function Home() {
     (updatedId: string) => {
       markRecentNode(updatedId)
       flashNode(updatedId)
+      bumpRecency(updatedId)
     },
-    [markRecentNode, flashNode],
+    [markRecentNode, flashNode, bumpRecency],
   )
 
   const {
@@ -167,15 +180,17 @@ export default function Home() {
     pickResult: pickSearchResult,
   } = useGraphSearch(nodes, {
     selectedNodeId,
+    recencyMap,
     onResultPick: useCallback(
       (nodeId: string) => {
         setHoveredNodeId(null)
         setSelectedNodeId(nodeId)
         setSelectedEdgeId(null)
         markRecentNode(nodeId)
+        bumpRecency(nodeId)
         setSearchBlendOverlayWithSelection(true)
       },
-      [markRecentNode],
+      [markRecentNode, bumpRecency],
     ),
   })
 
@@ -316,6 +331,7 @@ export default function Home() {
                   setSelectedNodeId(nodeId)
                   setSelectedEdgeId(null)
                   markRecentNode(nodeId)
+                  bumpRecency(nodeId)
                 }}
                 onEdgeClick={(edgeId) => {
                   exitSearchBlendOverlay()

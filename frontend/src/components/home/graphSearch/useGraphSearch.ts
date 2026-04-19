@@ -49,8 +49,10 @@ function selectedNodeIdForSearch(
 
 export type UseGraphSearchOptions = {
   onResultPick: (nodeId: string) => void
-  /** Passed to GET /search for graph-proximity ranking; optional. */
+  /** Passed to /search for graph-proximity ranking; optional. */
   selectedNodeId?: string | null
+  /** Epoch ms per node id; sent to the API for PRD §13.8 recency scoring. */
+  recencyMap?: Record<string, number>
 }
 
 export type UseGraphSearchReturn = {
@@ -80,7 +82,7 @@ export function useGraphSearch(
   nodes: Node[],
   options: UseGraphSearchOptions,
 ): UseGraphSearchReturn {
-  const { onResultPick, selectedNodeId } = options
+  const { onResultPick, selectedNodeId, recencyMap } = options
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(-1)
   const [backendResults, setBackendResults] = useState<SearchNodeHit[]>([])
@@ -170,6 +172,7 @@ export function useGraphSearch(
     const timer = window.setTimeout(() => {
       void searchNodes(trimmedQuery, selectedNodeIdForSearch(selectedNodeId), {
         signal: ac.signal,
+        recencyMap,
       })
         .then((hits) => {
           if (!alive) return
@@ -187,7 +190,7 @@ export function useGraphSearch(
       window.clearTimeout(timer)
       ac.abort()
     }
-  }, [trimmedQuery, selectedNodeId])
+  }, [trimmedQuery, selectedNodeId, recencyMap])
 
   const results = useMemo(() => {
     if (!trimmedQuery) return []
