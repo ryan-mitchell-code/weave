@@ -9,6 +9,7 @@ export default defineConfig({
       '/graph': { target: 'http://localhost:8080', changeOrigin: true },
       '/nodes': { target: 'http://localhost:8080', changeOrigin: true },
       '/edges': { target: 'http://localhost:8080', changeOrigin: true },
+      '/search': { target: 'http://localhost:8080', changeOrigin: true },
     },
   },
 })

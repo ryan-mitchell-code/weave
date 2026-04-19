@@ -12,6 +12,7 @@ Weave is a **single-user** workspace for tech leads to **understand people and r
 - **Typed relationships** between people (`works_with`, `reports_to`, `depends_on`, plus custom strings the API accepts).
 - **Interactive graph**: Dagre layout, person-style nodes with **team colours**, selection, **hover preview**, **focus dimming**, **focus mode**, **animated active edges**, highlights after create/edit.
 - **Command bar**: quick add nodes and edges; forgiving syntax; suggestions with keyboard navigation.
+- **Graph search** (header field): substring match on **name**, **team**, **tags**, and **notes**; up to **8** dropdown rows. Matching for the graph highlight is **always** computed in the browser; row **order** may use **GET `/search`** (PRD §13.8) when the API responds, with client-side ranking as fallback.
 - **Context panel**: edit name, team, notes, and tags; delete node or edge; change edge type; view connections.
 - **Dark UI** (Tailwind + small Radix-based components).
 
@@ -44,7 +45,7 @@ Details: **[docs/UI.md](docs/UI.md)**.
 
 ## How to run (development)
 
-Run the **API** and **frontend** in two terminals. The Vite dev server **proxies** `/graph`, `/nodes`, and `/edges` to `http://localhost:8080`, so you usually do **not** need to set `VITE_API_BASE` locally.
+Run the **API** and **frontend** in two terminals. The Vite dev server **proxies** `/graph`, `/nodes`, `/edges`, and `/search` to `http://localhost:8080`, so you usually do **not** need to set `VITE_API_BASE` locally.
 
 ### 1. Backend API
 
@@ -77,6 +78,7 @@ Open the URL Vite prints (typically **http://localhost:5173**).
 | Command | Where | Purpose |
 |--------|--------|---------|
 | `go test ./...` | `backend` | Run Go tests |
+| `npm run test` / `npm run test:run` | `frontend` | Vitest (watch / single run) |
 | `npm run build` | `frontend` | Production build |
 | `npm run lint` | `frontend` | ESLint |
 
@@ -101,6 +103,7 @@ The API client uses `import.meta.env.VITE_API_BASE` and defaults to an **empty s
 | `GET` / `POST` / `PATCH` / `DELETE` | `/nodes` | People CRUD |
 | `GET` / `POST` / `PATCH` / `DELETE` | `/edges` | Edges; `PATCH` updates type; `DELETE` removes an edge |
 | `GET` | `/graph` | Full `{ nodes, edges }` snapshot |
+| `GET` / `POST` | `/search` | Ranked nodes: `?q=` (required), optional `selected_node_id`. **POST** JSON body `{ "recency": { "<nodeId>": <epoch_ms> } }` for PRD §13.8 recency decay; **GET** ignores recency. |
 
 By default data is **in memory**. With **`WEAVE_MODE=persist`** and a running Postgres (see **Local development**), the API uses **`DATABASE_URL`** and persists nodes and edges in Postgres.
 
@@ -129,11 +132,12 @@ weave/
     │   ├── components/    # UI primitives + home/details panels
     │   ├── graph/       # React Flow view, nodes, edges, theme
     │   ├── pages/       # Home / main app shell
-    │   ├── lib/         # Shared utilities (e.g. cn)
+    │   ├── lib/         # Shared utilities (e.g. graph search matching)
     │   ├── App.tsx
     │   ├── main.tsx
     │   └── index.css    # Tailwind entry
     ├── vite.config.ts   # Dev server + API proxy
+    ├── vitest.config.ts # Vitest (merges `vite.config`)
     ├── tailwind.config.ts
     └── package.json
 ```

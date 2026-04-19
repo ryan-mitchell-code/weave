@@ -149,3 +149,32 @@ export async function deleteEdge(input: DeleteEdgeInput): Promise<Edge> {
   })
   return parseJson<Edge>(res)
 }
+
+export type SearchNodeHit = {
+  node: Node
+  score: number
+}
+
+export type SearchNodesOptions = {
+  signal?: AbortSignal
+  recencyMap?: Record<string, number>
+}
+
+export async function searchNodes(
+  query: string,
+  selectedNodeId?: string,
+  opts?: SearchNodesOptions,
+): Promise<SearchNodeHit[]> {
+  const params = new URLSearchParams({ q: query })
+  if (selectedNodeId) params.set('selected_node_id', selectedNodeId)
+  const res = await fetch(`${baseUrl}/search?${params.toString()}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    signal: opts?.signal,
+    body: JSON.stringify({
+      recency: opts?.recencyMap ?? {},
+    }),
+  })
+  if (!res.ok) throw new Error('Search failed')
+  return res.json() as Promise<SearchNodeHit[]>
+}

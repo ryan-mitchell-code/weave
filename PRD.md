@@ -422,6 +422,18 @@ Search ranking uses a **weighted combination of signals**. Each node gets a **sc
 
 ---
 
+#### Matching model (clarification)
+
+Search uses **cross-field matching** for whether a node **qualifies** for ranking:
+
+- A node matches if **all** whitespace-separated query terms appear **somewhere across** **name, team, tags, and notes** combined (substring, case-insensitive).
+
+Example: Team **Payments**, Notes **Works on infrastructure**, query `payments infra` → **matches**.
+
+**Scoring** is still **per-field** (weights in the table above), so the total reflects *where* matches occur.
+
+---
+
 #### Notes matching
 
 - Simple **substring** match (case-insensitive).
@@ -434,6 +446,16 @@ Search ranking uses a **weighted combination of signals**. Each node gets a **sc
 
 - **Exact** tag match preferred vs loose match.
 - Tags are **stronger signals** than notes (see weights).
+
+#### Tag scoring (clarification)
+
+- Tag matches contribute **a single score per node**, not per matching tag.
+- If several tags match the query, the node still receives **one** tag score contribution.
+- Tags act as a **relevance signal**, not a count of hits.
+
+Example: tags `payments`, `infra`; query `pay infra` → **+40 once**, not +80.
+
+**Rationale:** avoids over-weighting heavily tagged nodes; keeps scores interpretable and stable.
 
 ---
 
