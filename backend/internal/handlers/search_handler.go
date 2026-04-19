@@ -134,9 +134,8 @@ func neighborIDs(edges []models.Edge, selectedID string) map[string]struct{} {
 	return m
 }
 
-// matchesAllTerms reports whether text contains every whitespace-separated term in query (AND).
-// Both arguments must be lowercased; query is typically the handler’s trimmed qLower.
-// Empty or whitespace-only query yields no terms and returns false.
+// matchesAllTerms reports whether text contains every whitespace-separated term in query (AND)
+// within that single string. Used by tests; scoring uses matchesAllTermsAcrossNode + per-field contains.
 func matchesAllTerms(text, query string) bool {
 	terms := strings.Fields(query)
 	if len(terms) == 0 {
@@ -148,6 +147,66 @@ func matchesAllTerms(text, query string) bool {
 		}
 	}
 	return true
+}
+
+func buildSearchCorpus(n models.Node) string {
+	var parts []string
+
+	if n.Name != "" {
+		parts = append(parts, strings.ToLower(strings.TrimSpace(n.Name)))
+	}
+	if n.Team != "" {
+		parts = append(parts, strings.ToLower(strings.TrimSpace(n.Team)))
+	}
+	for _, t := range n.Tags {
+		if strings.TrimSpace(t) != "" {
+			parts = append(parts, strings.ToLower(strings.TrimSpace(t)))
+		}
+	}
+	if n.Notes != "" {
+		parts = append(parts, strings.ToLower(n.Notes))
+	}
+
+	return strings.Join(parts, " ")
+}
+
+// matchesAllTermsAcrossNode is true when every whitespace-separated query term appears as a
+// substring somewhere across name, team, tags, and notes (case-insensitive).
+func matchesAllTermsAcrossNode(n models.Node, qLower string) bool {
+	terms := strings.Fields(qLower)
+	if len(terms) == 0 {
+		return false
+	}
+
+	corpus := buildSearchCorpus(n)
+
+	for _, t := range terms {
+		if !strings.Contains(corpus, t) {
+			return false
+		}
+	}
+	return true
+}
+
+// fieldContainsAnyQueryTerm is true if field (already lowercased) contains at least one query term.
+// Per-field scoring: global AND is enforced by matchesAllTermsAcrossNode.
+func fieldContainsAnyQueryTerm(fieldLower, qLower string) bool {
+	for _, term := range strings.Fields(qLower) {
+		if term != "" && strings.Contains(fieldLower, term) {
+			return true
+		}
+	}
+	return false
+}
+
+// hasPrefixOnFirstTerm is true when the name starts with the first whitespace-separated
+// query term (multi-term queries still get prefix credit when the leading token matches).
+func hasPrefixOnFirstTerm(nameLower, qLower string) bool {
+	terms := strings.Fields(qLower)
+	if len(terms) == 0 {
+		return false
+	}
+	return strings.HasPrefix(nameLower, terms[0])
 }
 
 func recencyBoost(id string, recency map[string]int64) int {
@@ -175,6 +234,10 @@ func recencyBoost(id string, recency map[string]int64) int {
 }
 
 func scoreNode(n models.Node, qLower string, neighbors map[string]struct{}, recency map[string]int64) int {
+	if !matchesAllTermsAcrossNode(n, qLower) {
+		return 0
+	}
+
 	score := scoreFromName(n, qLower)
 	score += scoreFromTeam(n.Team, qLower)
 	score += scoreFromTags(n.Tags, qLower)
@@ -196,9 +259,9 @@ func scoreFromName(n models.Node, qLower string) int {
 	switch {
 	case nameLower == qLower:
 		return scoreNameExact
-	case strings.HasPrefix(nameLower, qLower):
+	case hasPrefixOnFirstTerm(nameLower, qLower):
 		return scoreNamePrefix
-	case matchesAllTerms(nameLower, qLower):
+	case fieldContainsAnyQueryTerm(nameLower, qLower):
 		return scoreNamePartial
 	default:
 		return 0
@@ -213,7 +276,7 @@ func scoreFromTeam(team, qLower string) int {
 	if teamLower == qLower {
 		return scoreTagOrTeam
 	}
-	if matchesAllTerms(teamLower, qLower) {
+	if fieldContainsAnyQueryTerm(teamLower, qLower) {
 		return scoreTagOrTeam
 	}
 	return 0
@@ -228,7 +291,7 @@ func scoreFromTags(tags []string, qLower string) int {
 		if tl == qLower {
 			return scoreTagOrTeam
 		}
-		if matchesAllTerms(tl, qLower) {
+		if fieldContainsAnyQueryTerm(tl, qLower) {
 			return scoreTagOrTeam
 		}
 	}
@@ -236,7 +299,8 @@ func scoreFromTags(tags []string, qLower string) int {
 }
 
 func scoreFromNotes(notes, qLower string) int {
-	if matchesAllTerms(strings.ToLower(notes), qLower) {
+	notesLower := strings.ToLower(notes)
+	if fieldContainsAnyQueryTerm(notesLower, qLower) {
 		return scoreNotes
 	}
 	return 0

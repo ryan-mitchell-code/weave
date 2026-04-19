@@ -33,6 +33,24 @@ Built with **React Flow**; positions come from **Dagre** (top-to-bottom layering
 
 **Dropdown (top results):** Up to **8** rows. **Ranking** defaults to a simple client-side score (sum of category hits, each category at most once): name **+5**, team **+3**, any matching tag **+2**, notes **+1**; ties break alphabetically by name. When the API returns search results successfully, **row order** may follow server-side relevance (PRD §13.8) instead; **which nodes match** the query (for the graph and for which rows are shown) still follows the substring rules above, and row **presentation** (labels, emphasis) is unchanged. Rows are tuned for scanability: bold name, muted team, and a strongest-match reason when the top match is not name (**`Team: …`**, **`Tag: …`**, or a short **notes** excerpt ~40 chars with ellipsis). Matching substrings in the shown fields are emphasized with a subtle stronger text weight.
 
+#### Matching vs ranking (important)
+
+| Layer | Responsibility |
+|------|----------------|
+| **Frontend** | Which nodes **match** (case-insensitive substring on **name**, **team**, **tags**, **notes**) |
+| **Backend** | **Ranks** candidates using weighted scoring (PRD §13.8) |
+
+**Implication:** the graph can highlight **every** matching node (frontend), while the dropdown shows only the **top** ranked rows (backend).
+
+#### Matching differences (intentional)
+
+Frontend and backend **matching rules differ on purpose**:
+
+- **Frontend:** a node matches if the **full query string** appears somewhere in those fields (broad, good for exploration).
+- **Backend:** a node must match using **all query terms across the node** (stricter; see PRD §13.8 cross-field matching).
+
+So some nodes may be **highlighted on the graph** but **not** appear in the top dropdown list. That is expected: the graph favours **discovery**; the ranked list favours **relevance**.
+
 When the query is non-empty and ranking returns no rows, the dropdown shows **No matches found** and graph search overlay is not applied (graph returns to normal styling).
 
 **Keyboard and preview:** **ArrowDown** / **ArrowUp** move the active row (minimum index **0** while results exist). **Enter** selects the active row (opens the node context panel); the query **stays** in the field. **Escape** clears the active row index and closes the list. Mouse **hover** on a row updates the active row. While the **results dropdown is open**, the graph **preview** uses the same focus-dimming rules as node hover: the **preview anchor** is the **active list row** if any, otherwise the **first** ranked result, then graph **hover**, then **selection** (`searchPreviewNodeId` → `hoveredNodeId` → `selectedNodeId` in `GraphView`). After the list **closes** (pick, Escape, or blur), `searchPreviewNodeId` is not applied, so dimming matches a **direct node click** (**hover**, then **selection**).

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -59,10 +60,10 @@ func TestScoreNode(t *testing.T) {
 			want: scoreNamePrefix,
 		},
 		{
-			name: "name partial multi-term",
+			name: "name prefix on first term for multi-word query",
 			node: models.Node{ID: "a", Name: "Bob The Builder"},
 			q:    "bob builder",
-			want: scoreNamePartial,
+			want: scoreNamePrefix,
 		},
 		{
 			name: "team match",
@@ -112,6 +113,96 @@ func TestScoreNode(t *testing.T) {
 				t.Fatalf("scoreNode(...) = %d, want %d", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestHasPrefixOnFirstTerm(t *testing.T) {
+	t.Parallel()
+	if !hasPrefixOnFirstTerm("alice smith", "alice") {
+		t.Fatal("single-term query: expected prefix")
+	}
+	if !hasPrefixOnFirstTerm("alice smith", "ali sm") {
+		t.Fatal("multi-term query: first token ali should prefix-match alice")
+	}
+	if hasPrefixOnFirstTerm("bob jones", "ali") {
+		t.Fatal("should not prefix when first token differs")
+	}
+	if hasPrefixOnFirstTerm("x", "") {
+		t.Fatal("empty query should be false")
+	}
+}
+
+func TestMatchesAllTermsAcrossNode(t *testing.T) {
+	t.Parallel()
+
+	team := "Payments"
+	notes := "Works on infrastructure"
+	n := models.Node{ID: "1", Name: "X", Team: team, Notes: notes}
+
+	if !matchesAllTermsAcrossNode(n, "payments infra") {
+		t.Fatal("expected cross-field match for payments + infra")
+	}
+	if matchesAllTermsAcrossNode(n, "payments infra nomatch") {
+		t.Fatal("should not match when a term is missing everywhere")
+	}
+
+	tagsSplit := models.Node{ID: "2", Name: "N", Tags: []string{"alpha", "beta"}}
+	if !matchesAllTermsAcrossNode(tagsSplit, "alpha beta") {
+		t.Fatal("terms split across two tags should match")
+	}
+}
+
+func TestScoreNodeZeroWhenCrossFieldUnsatisfied(t *testing.T) {
+	t.Parallel()
+	n := models.Node{ID: "a", Name: "Only", Team: "Payments"}
+	got := scoreNode(n, "payments infra", nil, nil)
+	if got != 0 {
+		t.Fatalf("scoreNode(...) = %d, want 0 when infra appears nowhere", got)
+	}
+}
+
+func TestScoreNodeMultipleTagsStillOneTagScore(t *testing.T) {
+	t.Parallel()
+	n := models.Node{
+		ID:   "a",
+		Name: "X",
+		Tags: []string{"payments", "infra"},
+	}
+	got := scoreNode(n, "pay infra", nil, nil)
+	if got != scoreTagOrTeam {
+		t.Fatalf("scoreNode(...) = %d, want single tag weight %d when multiple tags match", got, scoreTagOrTeam)
+	}
+}
+
+func TestBuildSearchCorpus(t *testing.T) {
+	t.Parallel()
+	n := models.Node{
+		ID:    "1",
+		Name:  "N",
+		Team:  "T",
+		Tags:  []string{"g1", "g2"},
+		Notes: "notes",
+	}
+	c := buildSearchCorpus(n)
+	for _, sub := range []string{"n", "t", "g1", "g2", "notes"} {
+		if !strings.Contains(c, sub) {
+			t.Fatalf("corpus %q missing substring %q", c, sub)
+		}
+	}
+}
+
+func TestScoreNodeCrossFieldMultiTerm(t *testing.T) {
+	t.Parallel()
+	n := models.Node{
+		ID:    "1",
+		Name:  "Someone",
+		Team:  "Payments",
+		Notes: "Works on infrastructure",
+	}
+	got := scoreNode(n, "payments infra", nil, nil)
+	want := scoreTagOrTeam + scoreNotes
+	if got != want {
+		t.Fatalf("scoreNode(...) = %d, want %d (team + notes)", got, want)
 	}
 }
 

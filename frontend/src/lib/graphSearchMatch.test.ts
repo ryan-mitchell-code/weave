@@ -50,6 +50,17 @@ describe('nodeMatchesSearchQuery', () => {
   it('returns false when no field matches', () => {
     expect(nodeMatchesSearchQuery(n, 'zzz')).toBe(false)
   })
+
+  it('requires the full query as a substring in one field (not cross-field)', () => {
+    const cross = person({
+      id: '2',
+      name: 'X',
+      team: 'Payments',
+      notes: 'Works on infrastructure',
+    })
+    expect(nodeMatchesSearchQuery(cross, 'payments infra')).toBe(false)
+    expect(nodeMatchesSearchQuery(cross, 'payments')).toBe(true)
+  })
 })
 
 describe('buildGraphSearchMatchingSet', () => {
