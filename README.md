@@ -101,6 +101,7 @@ The API client uses `import.meta.env.VITE_API_BASE` and defaults to an **empty s
 | `GET` / `POST` / `PATCH` / `DELETE` | `/nodes` | People CRUD |
 | `GET` / `POST` / `PATCH` / `DELETE` | `/edges` | Edges; `PATCH` updates type; `DELETE` removes an edge |
 | `GET` | `/graph` | Full `{ nodes, edges }` snapshot |
+| `GET` | `/search` | Ranked nodes: `?q=` (required), optional `selected_node_id` (PRD §13.8) |
 
 By default data is **in memory**. With **`WEAVE_MODE=persist`** and a running Postgres (see **Local development**), the API uses **`DATABASE_URL`** and persists nodes and edges in Postgres.
 
