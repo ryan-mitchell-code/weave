@@ -2,7 +2,7 @@
 
 This document describes the **frontend user experience** as implemented today: layout, graph behaviour, command bar, **context panel**, and visual design. In product terms: the **graph** is **structure** (people and links); the **context panel** (especially **notes** and **tags**) is where **meaning** is captured and refined.
 
-**Related docs:** [PRD.md](../PRD.md) (product goals, MVP, roadmap) · [README.md](../README.md) (run instructions, repo layout)
+**Related docs:** [PRD.md](../PRD.md) (product goals, MVP, roadmap) · [README.md](../README.md) (run instructions, repo layout) · [docs/AI.md](AI.md) (planned: AI on top of search—not in the UI yet)
 
 ---
 

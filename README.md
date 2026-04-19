@@ -2,7 +2,7 @@
 
 Weave is a **single-user** workspace for tech leads to **understand people and relationships**: a **graph** for **who connects to whom** (structure and navigation) and **notes/tags** for **personal context** that compounds over time. **Command bar** + **React Flow** graph + **context panel**; **Go REST API** (in-memory by default, **optional PostgreSQL** via **`WEAVE_MODE=persist`**) and **React** (Vite) frontend.
 
-**Documentation:** [PRD.md](PRD.md) (product intent, MVP, phases) · [docs/UI.md](docs/UI.md) (UI behaviour: graph, command bar, context panel, keyboard)
+**Documentation:** [PRD.md](PRD.md) (product intent, MVP, phases) · [docs/UI.md](docs/UI.md) (UI behaviour: graph, command bar, context panel, keyboard) · [docs/AI.md](docs/AI.md) (planned: local-first AI layer, `POST /ai/query`, search → context → LLM)
 
 ---
 
@@ -118,6 +118,7 @@ weave/
 ├── .env.example           # Example env (copy to .env; not committed)
 ├── docs/
 │   ├── UI.md              # Frontend UI (graph, command bar, context panel)
+│   ├── AI.md              # AI design: local LLM, context limits, /ai/query (planned)
 │   └── DEV_DATABASE.md    # Local Postgres via Docker Compose
 ├── tasks.md               # Historical checklist (may lag PRD §4)
 ├── README.md              # This file

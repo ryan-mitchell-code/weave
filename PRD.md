@@ -200,6 +200,8 @@ Weave will offer **grounded, practical help** drawn from **your notes and graph 
 
 **AI** is an **augmentation** layer over data you already own and understand, not a replacement for the graph or notes.
 
+**Technical design (constraints, pipeline, planned API):** [docs/AI.md](docs/AI.md).
+
 ### Product depth
 
 - Notes + tags UI  
@@ -214,7 +216,7 @@ Weave will offer **grounded, practical help** drawn from **your notes and graph 
 - Data stored **locally** or under **user control**.  
 - AI receives **minimal, explicit** context only.  
 - **No** full-graph exposure by default.  
-- Support for **local models** in future.  
+- **Local inference** for AI (no third-party graph/notes in the default path)—see [docs/AI.md](docs/AI.md).  
 
 ---
 
@@ -243,7 +245,7 @@ Weave will offer **grounded, practical help** drawn from **your notes and graph 
 | **Backend** | Go (REST API) |
 | **Frontend** | React (Vite), React Flow, Tailwind CSS, Radix-based primitives |
 | **Database** | **Default:** in-memory · **Optional:** PostgreSQL (**`WEAVE_MODE=persist`**, local Compose — [docs/DEV_DATABASE.md](docs/DEV_DATABASE.md)) |
-| **AI (future)** | OpenAI (initial); local models (future) |
+| **AI (planned)** | **Local** LLM only (e.g. Ollama on localhost)—no third-party inference for graph/notes by default. See [docs/AI.md](docs/AI.md). |
 
 ---
 
@@ -496,4 +498,5 @@ When **a node is selected**:
 |-----|---------|
 | [README.md](README.md) | Runbook, repo layout, API sketch |
 | [docs/UI.md](docs/UI.md) | Frontend UI features and behaviour |
+| [docs/AI.md](docs/AI.md) | AI layer: local-first, context building, planned `POST /ai/query` |
 | [tasks.md](tasks.md) | Historical task list (may lag this PRD) |
